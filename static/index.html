@@ -46,9 +46,9 @@
           📁 Ingest File
         </button>
 
-        <!-- Gemini Key Status Pill / Switcher -->
-        <button id="navApiKeyBtn" class="btn btn-outline-orange btn-sm" title="Google Gemini Status & Key Config" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
-          <span id="navGeminiStatusIcon">⚡</span> <span id="navGeminiStatusText">Gemini AI</span>
+        <!-- DataLens AI Status / Key Config Button -->
+        <button id="navApiKeyBtn" class="btn btn-outline-orange btn-sm" title="DataLens AI Intelligence Status" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+          <span id="navGeminiStatusIcon">⚡</span> <span id="navGeminiStatusText">DataLens AI</span>
         </button>
 
         <button id="resetDataBtn" class="btn btn-secondary btn-sm" style="display: none;">↺ Raw</button>
@@ -59,28 +59,20 @@
     </header>
   </div>
 
-  <!-- ================= GEMINI API KEY MODAL ================= -->
-  <div id="apiKeyModal" class="modal-backdrop" style="display: none;">
-    <div class="glass-card modal-content" style="max-width: 480px; width: 90%; margin: 15vh auto; position: relative;">
-      <button id="closeApiKeyModalBtn" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;">✕</button>
-      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-        <div class="brand-icon-bubble" style="width: 40px; height: 40px; font-size: 1.2rem;">🔑</div>
-        <div>
-          <h3 style="font-size: 1.2rem; color: #FFFFFF; font-weight: 700;">Google Gemini AI Config</h3>
-          <p style="color: var(--text-muted); font-size: 0.82rem;">Powering Vision OCR, Deep Thinking & Natural Language</p>
+  <!-- ================= DATALENS AI API KEY MODAL ================= -->
+  <div class="modal-backdrop" id="apiKeyModal" style="display: none;">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.25rem;">⚡</span>
+          <h3 style="font-size: 1.2rem; color: #FFFFFF; font-weight: 700;">DataLens AI Engine Config</h3>
         </div>
+        <button id="closeApiKeyModalBtn" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
       </div>
-      <p style="color: var(--text-main); font-size: 0.88rem; line-height: 1.5; margin-bottom: 1.25rem;">
-        Your API key is transmitted securely over HTTPS and enables <strong>Gemini 3.7 & 2.5 Flash</strong> for multimodal vision OCR, executive recruiter scoring, and conversational analysis.
+      
+      <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 1.25rem;">
+        Enables <strong>DataLens AI Advanced Intelligence</strong> for multimodal vision OCR, executive recruiter scoring, marksheet evaluation, and conversational analysis.
       </p>
-      <div style="margin-bottom: 1.25rem;">
-        <label style="display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 600;">Gemini API Key</label>
-        <input type="password" id="modalApiKeyInput" class="form-control" placeholder="AIzaSy..." style="width: 100%;">
-      </div>
-      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
-        <button id="cancelApiKeyModalBtn" class="btn btn-secondary btn-sm">Close</button>
-        <button id="saveModalApiKeyBtn" class="btn btn-primary btn-sm">Connect Key</button>
-      </div>
       <div id="modalKeyFeedback" style="margin-top: 0.75rem; font-size: 0.82rem; text-align: center;"></div>
     </div>
   </div>
@@ -498,12 +490,21 @@
               <span id="marksheetTierBadge" class="pill pill-success" style="font-size: 0.8rem;">Distinction Honors</span>
             </div>
             <p id="marksheetExamInfo" style="color: var(--text-muted); font-size: 0.88rem;">
-              Senior School Examination • Roll No: 12648920 • Passing Year: 2024
+              Senior Secondary / State Board Examination • Roll No: 12648920
             </p>
           </div>
-          <div style="text-align: right;">
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <!-- Best of N Subjects Selector -->
+            <div style="display: flex; align-items: center; gap: 0.35rem; background: rgba(0,0,0,0.3); padding: 0.3rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border-glass-orange);">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">Aggregate Mode:</span>
+              <select id="marksheetBestNSelect" class="form-control" style="padding: 0.2rem 0.5rem; font-size: 0.82rem; height: auto;">
+                <option value="all">All Subjects (Standard)</option>
+                <option value="best5">Best of 5 Subjects (Top 5 Norm)</option>
+                <option value="best4">Best of 4 Subjects (Top 4 Norm)</option>
+              </select>
+            </div>
             <button class="btn btn-outline-orange btn-sm" onclick="switchHub('hub-ai')">
-              🤖 Consult AI Counselor
+              🤖 Consult DataLens AI
             </button>
           </div>
         </div>
@@ -512,13 +513,13 @@
       <!-- 4 Top Metric Cards (Aggregate %, GPA, Best Subject, Lowest Subject) -->
       <div class="grid-4" style="margin-bottom: 2rem;">
         <div class="glass-card kpi-card">
-          <div class="kpi-label">Overall Aggregate</div>
+          <div class="kpi-label" id="marksheetPctLabel">Overall Aggregate</div>
           <div class="kpi-val" id="marksheetOverallPct" style="color: var(--emerald); font-size: 2.2rem; font-weight: 800;">91.3%</div>
           <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.3rem;" id="marksheetTotalScore">548 / 600 Marks</div>
         </div>
 
         <div class="glass-card kpi-card">
-          <div class="kpi-label">Estimated GPA (10.0 / 4.0)</div>
+          <div class="kpi-label" id="marksheetGpaLabel">Estimated GPA (10.0 / 4.0)</div>
           <div class="kpi-val" id="marksheetGpa" style="color: var(--orange-bright); font-size: 2.2rem; font-weight: 800;">9.13</div>
           <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.3rem;" id="marksheetGpa4">3.65 / 4.0 US Scale</div>
         </div>
@@ -533,6 +534,22 @@
           <div class="kpi-label">⚠️ Focus Improvement Area</div>
           <div class="kpi-val" id="marksheetWeakestSub" style="color: #FFFFFF; font-size: 1.25rem; font-weight: 700; word-break: break-word;">Physics</div>
           <div style="font-size: 0.78rem; color: var(--orange-amber); font-weight: 600; margin-top: 0.3rem;" id="marksheetWeakestMarks">85 / 100 (85.0%)</div>
+        </div>
+      </div>
+
+      <!-- Multi-Semester Progression Card (Shows only if multi-semester transcript detected) -->
+      <div id="multiSemesterCard" class="glass-card" style="display: none; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; font-weight: 700;">📈 Multi-Semester SGPA Progression & Cumulative CGPA</h3>
+          <span class="pill pill-orange" id="cumulativeCgpaBadge">CGPA: 8.75</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: center;">
+          <div id="semesterCardsList" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+            <!-- Populated via JS -->
+          </div>
+          <div style="position: relative; height: 220px;">
+            <canvas id="semesterProgressCanvas"></canvas>
+          </div>
         </div>
       </div>
 
@@ -568,14 +585,14 @@
         </div>
       </div>
 
-      <!-- Gemini Academic Guidance & Career Pathways Card -->
+      <!-- DataLens AI Academic Guidance Card -->
       <div class="glass-card" style="margin-bottom: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span style="font-size: 1.25rem;">⚡</span>
-            <h3 style="font-size: 1.25rem; color: #FFFFFF; font-weight: 700;">Google Gemini Academic & Career Intelligence</h3>
+            <h3 style="font-size: 1.25rem; color: #FFFFFF; font-weight: 700;">DataLens AI Academic & Career Intelligence</h3>
           </div>
-          <span class="pill pill-orange">Deep Thinking Guidance</span>
+          <span class="pill pill-orange">Deep Academic Guidance</span>
         </div>
         <div id="marksheetGuidanceMarkdown" class="markdown-body" style="font-size: 0.95rem; line-height: 1.7; color: var(--text-main);">
           <p style="color: var(--orange-bright);">Synthesizing career specializations and subject tactics...</p>
@@ -584,7 +601,7 @@
 
     </section>
 
-    <!-- ================= HUB 3: DATA EXPLORER & EDA ================= -->
+    <!-- ================= HUB 3: DATA STUDIO & VISUAL EXPLORER ================= -->
     <section id="hub-data" class="view-panel">
       
       <!-- Top Metric Cards -->
@@ -611,7 +628,7 @@
       <div class="glass-card" style="margin-bottom: 2rem; border: 1px solid var(--border-glass-orange);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <div>
-            <h3 style="font-size: 1.15rem; color: #FFFFFF; font-weight: 700;">⚡ Studio Capabilities & Deep Analysis</h3>
+            <h3 style="font-size: 1.15rem; color: #FFFFFF; font-weight: 700;">⚡ Studio Capabilities & Actions</h3>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem;">Click any tool below to launch on-demand:</p>
           </div>
         </div>
@@ -629,7 +646,7 @@
             <span style="font-size: 1.4rem;">🤖</span>
             <div>
               <div style="font-weight: 700; font-size: 0.92rem; color: #FFFFFF;">AI Analyst</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">Chat & Gemini briefing</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Chat & DataLens briefing</div>
             </div>
           </button>
 
@@ -649,6 +666,50 @@
             </div>
           </button>
 
+        </div>
+      </div>
+
+      <!-- ================= INTERACTIVE VISUAL CHART STUDIO ================= -->
+      <div class="glass-card" style="margin-bottom: 2rem; border-left: 4px solid var(--orange-bright);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h3 style="font-size: 1.3rem; color: #FFFFFF; font-weight: 800;">📈 Interactive Visual Analytics & Charts</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">Select chart type and columns to instantly generate high-resolution graphs:</p>
+          </div>
+
+          <!-- Chart Type Buttons -->
+          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+            <button class="btn btn-sm btn-outline-orange chart-type-btn active" data-chart="hist">📊 Histogram</button>
+            <button class="btn btn-sm btn-secondary chart-type-btn" data-chart="scatter">📈 Scatter 2D</button>
+            <button class="btn btn-sm btn-secondary chart-type-btn" data-chart="bar">📊 Bar Counts</button>
+            <button class="btn btn-sm btn-secondary chart-type-btn" data-chart="box">📦 Boxplot</button>
+            <button class="btn btn-sm btn-secondary chart-type-btn" data-chart="corr">🔥 Correlation Matrix</button>
+          </div>
+        </div>
+
+        <!-- Chart Controls (Column Selectors) -->
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.3); padding: 0.75rem 1rem; border-radius: var(--radius-sm);">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Primary Variable (X):</label>
+            <select id="chartColXSelect" class="form-control" style="width: auto; min-width: 180px;"></select>
+          </div>
+
+          <div id="chartColYWrapper" style="display: none; align-items: center; gap: 0.5rem;">
+            <label style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Secondary Variable (Y):</label>
+            <select id="chartColYSelect" class="form-control" style="width: auto; min-width: 180px;"></select>
+          </div>
+
+          <div id="chartStatBadge" style="margin-left: auto; font-size: 0.82rem; color: var(--emerald); font-weight: 600;">
+            Rendering Active Chart...
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div style="position: relative; height: 380px; width: 100%;">
+          <canvas id="studioChartCanvas"></canvas>
+          <div id="correlationHeatmapContainer" style="display: none; height: 100%; width: 100%; overflow: auto;">
+            <!-- Correlation Matrix Heatmap Table -->
+          </div>
         </div>
       </div>
 
@@ -705,6 +766,38 @@
             <button id="restoreRawDataBtn" class="btn btn-secondary">↺ Revert to Raw</button>
           </div>
         </div>
+      </div>
+
+      <!-- After-Cleaning Audit & Impact Results -->
+      <div id="cleaningResultsCard" class="glass-card" style="display: none; margin-bottom: 2rem; border-left: 4px solid var(--emerald); background: rgba(16, 185, 129, 0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.3rem;">✅</span>
+            <h3 style="font-size: 1.2rem; color: #FFFFFF; font-weight: 700;">Data Cleaning & Hygiene Results</h3>
+          </div>
+          <span class="pill pill-success" id="cleanHealthImprovementBadge">Health: 100/100 (+25 pts)</span>
+        </div>
+        <div class="grid-4" style="margin-bottom: 1rem;">
+          <div class="glass-card kpi-card" style="background: rgba(0,0,0,0.3);">
+            <div class="kpi-label">Duplicates Removed</div>
+            <div class="kpi-val" id="cleanDupesRemoved" style="color: var(--emerald); font-size: 1.8rem;">0</div>
+          </div>
+          <div class="glass-card kpi-card" style="background: rgba(0,0,0,0.3);">
+            <div class="kpi-label">Missing Cells Imputed</div>
+            <div class="kpi-val" id="cleanMissingImputed" style="color: var(--emerald); font-size: 1.8rem;">0</div>
+          </div>
+          <div class="glass-card kpi-card" style="background: rgba(0,0,0,0.3);">
+            <div class="kpi-label">IQR Outliers Capped</div>
+            <div class="kpi-val" id="cleanOutliersCapped" style="color: var(--emerald); font-size: 1.8rem;">0</div>
+          </div>
+          <div class="glass-card kpi-card" style="background: rgba(0,0,0,0.3);">
+            <div class="kpi-label">Total Clean Rows</div>
+            <div class="kpi-val" id="cleanFinalRows" style="color: #FFFFFF; font-size: 1.8rem;">0</div>
+          </div>
+        </div>
+        <p id="cleanLogSummaryText" style="font-size: 0.88rem; color: var(--text-main); line-height: 1.6;">
+          Dataset has been successfully sanitized with all null values imputed and duplicate records removed.
+        </p>
       </div>
 
       <!-- Outliers & Missingness Matrix -->

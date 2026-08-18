@@ -1,7 +1,8 @@
-"""Academic Marksheet & Transcript Intelligence Engine for DataLens AI.
+"""Academic Marksheet, State Board & Multi-Semester Transcript Engine for DataLens AI.
 
-Extracts subjects, marks, grades, computes GPA/aggregates, identifies strongest & weakest areas,
-and generates deep Gemini-powered academic & career guidance.
+Supports CBSE, ICSE, State Boards (WBCHSE, Maharashtra HSC, UP Board, etc.),
+single marksheets, multi-semester college transcripts (SGPA + CGPA progression),
+and Best-of-N subject selection.
 """
 
 import os
@@ -15,16 +16,16 @@ logger = get_logger("MarksheetEngine")
 
 MARKSHEET_KEYWORDS = [
     "marksheet", "mark sheet", "transcript", "scorecard", "score card",
-    "grade card", "examination", "semester", "roll no", "enrollment",
-    "cbse", "icse", "board", "university", "school", "cgpa", "sgpa",
-    "marks obtained", "maximum marks", "max marks", "subject code",
-    "theory", "practical", "class xii", "class x", "higher secondary",
-    "bachelor", "master", "percentage", "pass marks", "grade points"
+    "grade card", "examination", "semester", "sem 1", "sem 2", "sem 3", "sem 4", "sem 5", "sem 6",
+    "roll no", "enrollment", "registration", "cbse", "icse", "wbchse", "hsc", "ssc", "board",
+    "council", "university", "college", "school", "cgpa", "sgpa", "ygpa", "marks obtained",
+    "maximum marks", "max marks", "subject code", "theory", "practical", "class xii", "class x",
+    "higher secondary", "bachelor", "master", "percentage", "pass marks", "grade points", "credits"
 ]
 
 
 class MarksheetEngine:
-    """Intelligent Academic Marksheet & Transcript Analysis Engine."""
+    """Intelligent Academic Marksheet, State Board & Multi-Semester Transcript Engine."""
 
     def __init__(self, raw_text: str, file_name: str = "Marksheet.pdf", api_key: Optional[str] = None):
         self.raw_text = raw_text
@@ -37,13 +38,13 @@ class MarksheetEngine:
                 from google import genai
                 self.client = genai.Client(api_key=self.api_key)
             except Exception as e:
-                logger.warning(f"Could not initialize Gemini in MarksheetEngine: {e}")
+                logger.warning(f"Could not initialize AI client in MarksheetEngine: {e}")
 
     @staticmethod
     def is_marksheet(text: str, file_name: str = "") -> bool:
-        """Determines whether a document is an academic marksheet or transcript."""
+        """Determines whether a document is an academic marksheet, state board scorecard, or multi-semester transcript."""
         fn_lower = file_name.lower()
-        if any(k in fn_lower for k in ["marksheet", "mark_sheet", "transcript", "scorecard", "class_xii", "class_x", "gradecard", "grade_sheet", "semester_"]):
+        if any(k in fn_lower for k in ["marksheet", "mark_sheet", "transcript", "scorecard", "class_xii", "class_x", "gradecard", "grade_sheet", "semester", "sem_", "wbchse", "cbse", "hsc"]):
             return True
 
         text_lower = text.lower()
@@ -51,30 +52,29 @@ class MarksheetEngine:
         if keyword_hits >= 3:
             return True
 
-        # Check for presence of subjects and numeric marks patterns
-        has_subjects = any(s in text_lower for s in ["mathematics", "physics", "chemistry", "biology", "english", "computer", "science", "social", "economics", "accounts", "history"])
-        has_marks_pattern = bool(re.search(r"\b\d{2,3}\s*/\s*\d{2,3}\b|\b\d{2,3}\s+(?:out of|\/)\s+\d{2,3}\b|\bgrade\s*:\s*[A-F]\b", text_lower))
+        has_subjects = any(s in text_lower for s in ["mathematics", "math", "physics", "chemistry", "biology", "english", "computer", "science", "social", "economics", "accounts", "history", "bengali", "hindi", "data structures", "algorithms", "dbms"])
+        has_marks_pattern = bool(re.search(r"\b\d{2,3}\s*/\s*\d{2,3}\b|\b\d{2,3}\s+(?:out of|\/)\s+\d{2,3}\b|\bgrade\s*:\s*[A-F]\b|\bsgpa\b|\bcgpa\b", text_lower))
 
         return has_subjects and (has_marks_pattern or keyword_hits >= 2)
 
     def analyze(self) -> Dict[str, Any]:
-        """Conducts full marksheet evaluation, statistical aggregation, and Gemini guidance."""
-        # 1. First attempt Gemini Structured Extraction for 100% precision
-        gemini_data = self._gemini_extract()
-        if gemini_data and gemini_data.get("subjects") and len(gemini_data["subjects"]) >= 2:
-            return self._compute_analytics(gemini_data)
+        """Conducts full marksheet evaluation, multi-semester SGPA/CGPA aggregation, and DataLens AI guidance."""
+        # 1. First attempt AI Structured Extraction for multi-semester or single marksheet
+        ai_data = self._ai_extract()
+        if ai_data and (ai_data.get("subjects") or ai_data.get("semesters")):
+            return self._compute_analytics(ai_data)
 
         # 2. Fallback to Deterministic Regex & Pattern Extraction
         deterministic_data = self._regex_extract()
         return self._compute_analytics(deterministic_data)
 
-    def _gemini_extract(self) -> Optional[Dict[str, Any]]:
-        """Uses Gemini Flash to extract structured academic data from raw document text."""
+    def _ai_extract(self) -> Optional[Dict[str, Any]]:
+        """Extracts structured academic data from raw document text supporting single marksheets and multi-semester transcripts."""
         if not self.client:
             return None
 
         prompt = f"""You are DataLens AI Academic Intelligence Engine.
-Analyze the following marksheet / transcript text and extract structured information into pure JSON:
+Analyze the following marksheet / scorecard / multi-semester transcript text and extract structured academic data into pure JSON:
 
 DOCUMENT TEXT:
 {self.raw_text}
@@ -83,9 +83,26 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
 {{
   "candidate_name": "string (or 'Student')",
   "roll_number": "string or null",
-  "institution_board": "string (e.g. CBSE, Delhi University, etc.)",
-  "examination_name": "string (e.g. Class XII Senior School Certificate, B.Tech Semester 6, etc.)",
+  "institution_board": "string (e.g. CBSE, WBCHSE, Maharashtra State Board, Delhi University, MAKAUT, etc.)",
+  "examination_name": "string (e.g. Class XII Higher Secondary Examination, B.Tech Computer Science, etc.)",
   "passing_year": "string or null",
+  "is_multi_semester": true or false,
+  "semesters": [
+    {{
+      "semester_name": "Semester 1",
+      "sgpa": number or null,
+      "total_marks_obtained": number or null,
+      "total_max_marks": number or null,
+      "subjects": [
+        {{
+          "subject_name": "string",
+          "marks_obtained": number,
+          "max_marks": number,
+          "grade": "string or null"
+        }}
+      ]
+    }}
+  ],
   "subjects": [
     {{
       "subject_name": "string",
@@ -110,12 +127,12 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
                             raw_json = raw_json[:-3]
                         raw_json = raw_json.strip()
                         data = json.loads(raw_json)
-                        if isinstance(data, dict) and "subjects" in data:
+                        if isinstance(data, dict) and (data.get("subjects") or data.get("semesters")):
                             return data
                 except Exception:
                     continue
         except Exception as e:
-            logger.warning(f"Gemini structured marksheet extraction failed: {e}")
+            logger.warning(f"DataLens AI marksheet extraction failed: {e}")
 
         return None
 
@@ -124,19 +141,18 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
         lines = [line.strip() for line in self.raw_text.split("\n") if line.strip()]
         subjects: List[Dict[str, Any]] = []
 
-        # Common subject detection
         known_subjects = [
             "Mathematics", "Physics", "Chemistry", "Biology", "English", "English Core",
             "Computer Science", "Information Technology", "Economics", "Accountancy",
             "Business Studies", "History", "Political Science", "Geography", "Psychology",
-            "Sociology", "Hindi", "Physical Education", "Science", "Social Science"
+            "Sociology", "Bengali", "Hindi", "Physical Education", "Science", "Social Science",
+            "Data Structures", "Algorithms", "Operating Systems", "DBMS", "Computer Networks"
         ]
 
         found_subjects = set()
         for line in lines:
             for s in known_subjects:
                 if s.lower() in line.lower() and s not in found_subjects:
-                    # Look for numbers in the line
                     nums = [float(n) for n in re.findall(r"\b\d{1,3}(?:\.\d+)?\b", line)]
                     if nums:
                         marks = nums[-1] if nums[-1] <= 100 else nums[0]
@@ -153,7 +169,6 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
                         })
                         found_subjects.add(s)
 
-        # If no known subjects found, extract generic lines with marks
         if not subjects:
             for idx, line in enumerate(lines[:15]):
                 nums = [float(n) for n in re.findall(r"\b\d{1,3}(?:\.\d+)?\b", line)]
@@ -171,9 +186,11 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
         return {
             "candidate_name": "Student",
             "roll_number": None,
-            "institution_board": "Academic Institution",
-            "examination_name": "Examination Scorecard",
+            "institution_board": "State Board / University",
+            "examination_name": "Academic Examination Scorecard",
             "passing_year": None,
+            "is_multi_semester": False,
+            "semesters": [],
             "subjects": subjects
         }
 
@@ -189,8 +206,47 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
         return "D (Needs Improvement)"
 
     def _compute_analytics(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Calculates GPA, highest/lowest subjects, distribution stats, and career pathways."""
+        """Calculates GPA, Best-of-N averages, multi-semester SGPA/CGPA progression, and career pathways."""
+        semesters_raw = data.get("semesters", [])
+        is_multi_sem = bool(data.get("is_multi_semester") or len(semesters_raw) > 1)
+
         subjects = data.get("subjects", [])
+        semesters_processed = []
+
+        if is_multi_sem and semesters_raw:
+            # Process multi-semester data
+            all_subjects = []
+            sgpa_list = []
+            for sem in semesters_raw:
+                sem_subs = sem.get("subjects", [])
+                s_obt = sum(float(s.get("marks_obtained", 0)) for s in sem_subs)
+                s_max = sum(float(s.get("max_marks", 100)) for s in sem_subs) if sem_subs else 100.0
+                s_pct = round((s_obt / max(1.0, s_max)) * 100.0, 2)
+                s_sgpa = sem.get("sgpa")
+                if s_sgpa is None or float(s_sgpa) <= 0:
+                    s_sgpa = round(s_pct / 10.0, 2)
+                else:
+                    s_sgpa = float(s_sgpa)
+                sgpa_list.append(s_sgpa)
+
+                semesters_processed.append({
+                    "semester_name": sem.get("semester_name", f"Semester {len(semesters_processed)+1}"),
+                    "sgpa": s_sgpa,
+                    "percentage": s_pct,
+                    "total_marks_obtained": s_obt,
+                    "total_max_marks": s_max,
+                    "subjects_count": len(sem_subs),
+                    "subjects": sem_subs
+                })
+                all_subjects.extend(sem_subs)
+
+            if not subjects and all_subjects:
+                subjects = all_subjects
+
+            cgpa = round(sum(sgpa_list) / max(1, len(sgpa_list)), 2)
+        else:
+            cgpa = None
+
         if not subjects:
             subjects = [
                 {"subject_name": "General Studies", "marks_obtained": 75.0, "max_marks": 100.0, "grade": "B1"}
@@ -199,8 +255,8 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
         total_obtained = sum(float(s.get("marks_obtained", 0)) for s in subjects)
         total_max = sum(float(s.get("max_marks", 100)) for s in subjects)
         overall_pct = round((total_obtained / max(1.0, total_max)) * 100.0, 2)
-        gpa_10 = round((overall_pct / 10.0), 2)
-        gpa_4 = round((overall_pct / 100.0) * 4.0, 2)
+        gpa_10 = cgpa if cgpa is not None else round((overall_pct / 10.0), 2)
+        gpa_4 = round((gpa_10 / 10.0) * 4.0, 2)
 
         # Subject sorted by percentage
         sub_list = []
@@ -220,9 +276,20 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
         strongest = sub_list_sorted[0]
         weakest = sub_list_sorted[-1]
 
+        # Calculate Best of 4 & Best of 5 Aggregates (Board Norms)
+        best_4_list = sub_list_sorted[:4] if len(sub_list_sorted) >= 4 else sub_list_sorted
+        best_4_obtained = sum(s["marks"] for s in best_4_list)
+        best_4_max = sum(s["max"] for s in best_4_list)
+        best_4_pct = round((best_4_obtained / max(1.0, best_4_max)) * 100.0, 2)
+
+        best_5_list = sub_list_sorted[:5] if len(sub_list_sorted) >= 5 else sub_list_sorted
+        best_5_obtained = sum(s["marks"] for s in best_5_list)
+        best_5_max = sum(s["max"] for s in best_5_list)
+        best_5_pct = round((best_5_obtained / max(1.0, best_5_max)) * 100.0, 2)
+
         # Academic Tier Classification
         if overall_pct >= 90.0:
-            tier = "🏆 Distinction Honors (Top 5% Tier)"
+            tier = "🏆 Distinction Honors (Top 5% Standing)"
             tier_color = "#10B981"
             badge = "Outstanding Academic Excellence"
         elif overall_pct >= 75.0:
@@ -234,24 +301,29 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
             tier_color = "#F59E0B"
             badge = "Solid Foundation"
         else:
-            tier = "⚠️ Average / Improvement Needed"
+            tier = "⚠️ Improvement Needed"
             tier_color = "#EF4444"
             badge = "Requires Focused Remediation"
 
-        # Generate Gemini Career & Higher Education Guidance
+        # Generate DataLens AI Career Guidance
         guidance = self._generate_guidance(data, overall_pct, strongest, weakest, sub_list)
 
         return {
             "is_marksheet": True,
+            "is_multi_semester": is_multi_sem,
+            "semesters": semesters_processed,
             "candidate_name": data.get("candidate_name") or "Student",
             "roll_number": data.get("roll_number") or "N/A",
-            "institution_board": data.get("institution_board") or "Academic Board",
+            "institution_board": data.get("institution_board") or "State Board / University",
             "examination_name": data.get("examination_name") or "Academic Examination",
             "passing_year": data.get("passing_year") or "N/A",
             "summary_metrics": {
                 "overall_percentage": overall_pct,
                 "gpa_out_of_10": gpa_10,
                 "gpa_out_of_4": gpa_4,
+                "cgpa": cgpa,
+                "best_4_percentage": best_4_pct,
+                "best_5_percentage": best_5_pct,
                 "total_marks_obtained": total_obtained,
                 "total_max_marks": total_max,
                 "total_subjects": len(subjects),
@@ -289,7 +361,8 @@ Generate an authoritative, empowering, and actionable Academic Guidance Report i
 1. 💡 **Performance Diagnosis & Key Cognitive Strengths**
 2. 🎯 **Top 3 Recommended Higher Education / Career Specializations** (Tailored strictly to their best subjects)
 3. 🛠️ **Targeted Improvement Strategy for {weakest['subject']}** (Concrete study techniques & resources)
-4. 🚀 **Next Milestone Strategic Roadmap** (Immediate 6-month academic goals)"""
+4. 🚀 **Next Milestone Strategic Roadmap** (Immediate 6-month academic goals)
+Do NOT mention any third-party AI provider names, refer strictly to DataLens AI."""
 
             try:
                 models_to_try = [os.getenv("MODEL_NAME", "gemini-2.5-flash"), "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
@@ -298,7 +371,7 @@ Generate an authoritative, empowering, and actionable Academic Guidance Report i
                         resp = self.client.models.generate_content(model=m, contents=prompt)
                         if resp and resp.text:
                             return {
-                                "mode": "gemini_deep_thinking",
+                                "mode": "datalens_ai_intelligence",
                                 "markdown": resp.text.strip(),
                                 "strong_pathways": [
                                     f"Specialized Degrees in {strongest['subject']} & Applied Sciences",
@@ -309,7 +382,7 @@ Generate an authoritative, empowering, and actionable Academic Guidance Report i
                     except Exception:
                         continue
             except Exception as ge:
-                logger.warning(f"Gemini marksheet guidance generation failed: {ge}")
+                logger.warning(f"DataLens AI marksheet guidance generation failed: {ge}")
 
         # Deterministic Academic Guidance Fallback
         return {

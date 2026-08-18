@@ -211,12 +211,12 @@ RULE: Every critical metric claim MUST include a bracketed evidence tag `[Eviden
                     "data": None,
                 }
 
-        # 2. Priority: Gemini Grounded Reasoning with Full Dataset Context
+        # 2. Priority: DataLens AI Grounded Reasoning with Full Dataset Context
         grounded_ctx = self._build_grounded_context()
         rag_docs = RAGEngine.search(user_query)
         rag_context = "\n".join([f"• **{d['title']}**: {d['content']}" for d in rag_docs]) if rag_docs else ""
 
-        prompt = f"""You are DataLens AI, a principal data scientist and executive analyst.
+        prompt = f"""You are DataLens AI, an expert, friendly, and practical data scientist.
 Dataset Context:
 {grounded_ctx}
 
@@ -225,7 +225,7 @@ Relevant Knowledge Base Articles:
 
 User question: {user_query}
 
-Provide a direct, comprehensive, and grounded answer in Markdown. Cite specific column names, numbers, or correlation coefficients from the dataset facts."""
+Provide a direct, crystal-clear, and helpful answer in Markdown. Keep explanations simple, practical, and grounded in the data. Cite exact numbers and column names where helpful. Never mention third-party AI provider names, refer exclusively to DataLens AI."""
 
         res_text = self._call_gemini(prompt)
         if res_text:
