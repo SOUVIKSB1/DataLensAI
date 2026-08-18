@@ -140,18 +140,30 @@ class AIEngine:
 
         # If LLM is available, query Gemini
         if self.client:
-            prompt = f"""You are DataLens AI, a principal data scientist and strategist.
-Analyze the following mathematically verified dataset context:
+            prompt = f"""You are DataLens AI, an elite Principal Data Scientist, ML Architect, and Enterprise Business Strategist.
+Conduct an extensive, high-impact Executive Intelligence Briefing on the following mathematically verified dataset:
 
 {context}
 
-Generate a polished executive briefing in Markdown with:
-1. 💡 **Macro Key Findings** (Include exact metrics as `[Evidence: metric=value]`)
-2. ⚠️ **Data Quality & Hygiene Hazards** (Missingness, duplicates, outliers)
-3. 📈 **Correlation Dynamics & Distribution Trends**
-4. 🎯 **Strategic Recommendations for ML & Decision Making**
+Generate an authoritative, boardroom-ready report in GitHub-flavored Markdown covering:
 
-RULE: Every key claim MUST be backed by a bracketed evidence tag (e.g. `[Evidence: Pearson r=0.82]`)."""
+# 💡 Executive Key Takeaways & Core Drivers
+- High-level business interpretation of the data.
+- Core metric findings with exact evidence citations (e.g. `[Evidence: metric=value]`).
+
+# ⚠️ Data Quality, Outliers & Operational Hazards
+- Critical anomalies, missing data risks, and IQR outlier analysis.
+- Operational impact if left uncleaned.
+
+# 📈 Correlation Dynamics & Behavioral Trends
+- Deep breakdown of strong Pearson correlations and feature relationships.
+- Business meaning behind the statistical interactions.
+
+# 🎯 Strategic Action Plan & Predictive Modeling Roadmap
+- 3 high-impact business decisions to execute immediately based on the data.
+- Recommended ML models (e.g. Random Forest Classifier/Regressor) and primary feature drivers.
+
+RULE: Every critical metric claim MUST include a bracketed evidence tag `[Evidence: metric=value]` to maintain 100% mathematical verifiability."""
             result = self._call_gemini(prompt)
             if result:
                 return result

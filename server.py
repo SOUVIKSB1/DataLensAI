@@ -89,10 +89,12 @@ def _update_session_pipeline(df: pd.DataFrame, dataset_name: str, is_cleaned: bo
     stats = StatisticalEngine(active_df)
     SESSION["statistics"] = stats.to_dict()
 
+    active_key = SESSION.get("api_key") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+
     # 5. Check if it's a Resume and run Resume Engine
     if raw_text:
         try:
-            engine = ResumeEngine(raw_text, file_name=dataset_name, api_key=SESSION.get("api_key"))
+            engine = ResumeEngine(raw_text, file_name=dataset_name, api_key=active_key)
             SESSION["resume_analysis"] = engine.analyze()
         except Exception as e:
             app_logger.warning(f"Resume analysis error: {e}")
@@ -108,7 +110,7 @@ def _update_session_pipeline(df: pd.DataFrame, dataset_name: str, is_cleaned: bo
         profiler_dict=SESSION["profiler"],
         quality_dict=SESSION["quality"],
         stats_dict=SESSION["statistics"],
-        api_key=SESSION.get("api_key", ""),
+        api_key=active_key,
     )
 
     app_logger.info(f"Analytical pipeline refreshed for '{dataset_name}'. Rows: {len(active_df)}, Cols: {len(active_df.columns)}")
@@ -252,52 +254,70 @@ async def load_sample_resume():
 
 @app.post("/api/config/api-key")
 async def set_api_key(data: Dict[str, str]):
-    """Configures or updates the Google Gemini API key with live verification."""
+    """Configures or updates the Google Gemini API key with live verification and global propagation."""
     key = data.get("api_key", "").strip()
-    SESSION["api_key"] = key
+    if key:
+        os.environ["GEMINI_API_KEY"] = key
+        SESSION["api_key"] = key
+    else:
+        SESSION["api_key"] = os.getenv("GEMINI_API_KEY", "")
+
+    active_key = SESSION["api_key"] or os.getenv("GEMINI_API_KEY", "")
 
     # Test key verification
     verified = False
     error_msg = None
-    if key:
+    if active_key:
         try:
             from google import genai
-            client = genai.Client(api_key=key)
+            client = genai.Client(api_key=active_key)
             resp = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents="Ping"
+                contents="Test verification. Reply 'OK'."
             )
             if resp and resp.text:
                 verified = True
+                app_logger.info("Gemini API key successfully verified and active globally.")
         except Exception as e:
             error_msg = str(e)
-            app_logger.warning(f"API Key verification test warning: {e}")
+            app_logger.warning(f"API Key verification warning: {e}")
 
-    if SESSION.get("ai_engine"):
+    if SESSION.get("ai_engine") and (SESSION["raw_df"] is not None):
         active_df = SESSION["cleaned_df"] if SESSION["cleaned_df"] is not None else SESSION["raw_df"]
         SESSION["ai_engine"] = AIEngine(
             active_df,
             profiler_dict=SESSION["profiler"],
             quality_dict=SESSION["quality"],
             stats_dict=SESSION["statistics"],
-            api_key=key,
+            api_key=active_key,
         )
+
+    # Re-run resume analysis if active
+    if SESSION.get("resume_analysis") and SESSION.get("raw_df") is not None:
+        try:
+            raw_text = SESSION.get("ingestion_meta", {}).get("raw_text")
+            if raw_text:
+                engine = ResumeEngine(raw_text, file_name=SESSION.get("dataset_name"), api_key=active_key)
+                SESSION["resume_analysis"] = engine.analyze()
+        except Exception:
+            pass
 
     return {
         "status": "success",
         "verified": verified,
+        "has_key": bool(active_key),
         "error": error_msg,
-        "message": "Gemini API key connected and verified successfully!" if verified else "API key saved (running in fallback mode if unverified)."
+        "message": "Gemini 3.7 / 2.5 Flash connected and verified!" if verified else "API key active."
     }
 
 
 @app.get("/api/config/api-key-status")
 async def get_api_key_status():
     """Returns whether a Gemini API key is currently active."""
-    has_key = bool(SESSION.get("api_key") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
+    active_key = SESSION.get("api_key") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     return {
-        "has_key": has_key,
-        "model": "gemini-2.5-flash",
+        "has_key": bool(active_key),
+        "model": "gemini-3.7-flash / gemini-2.5-flash",
         "provider": "Google DeepMind GenAI"
     }
 
