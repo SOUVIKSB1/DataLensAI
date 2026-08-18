@@ -24,6 +24,7 @@ from datalens.quality import DataQualityEngine
 from datalens.statistics import StatisticalEngine
 from datalens.ml_engine import MLEngine
 from datalens.ai_engine import AIEngine
+from datalens.local_ai import get_local_ai_config, local_ai_enabled
 from datalens.rag_engine import RAGEngine
 from datalens.reports import ReportGenerator
 from datalens.resume_engine import ResumeEngine
@@ -357,11 +358,14 @@ async def load_sample_resume():
 
 @app.post("/api/config/api-key")
 async def set_api_key(data: Dict[str, str]):
-    """Configures or updates the Google Gemini API key with live verification and global propagation."""
+    """Configures or updates the optional Gemini API key with live verification."""
     key = data.get("api_key", "").strip()
+    clear_key = str(data.get("clear", "")).strip().lower() in {"1", "true", "yes"}
     if key:
         os.environ["GEMINI_API_KEY"] = key
         SESSION["api_key"] = key
+    elif clear_key:
+        SESSION["api_key"] = ""
     else:
         SESSION["api_key"] = os.getenv("GEMINI_API_KEY", "")
 
@@ -376,11 +380,11 @@ async def set_api_key(data: Dict[str, str]):
             client = genai.Client(api_key=active_key)
             resp = client.models.generate_content(
                 model="gemini-2.5-flash",
-                contents="Test verification. Reply 'OK'."
+                contents="Reply with OK."
             )
             if resp and resp.text:
                 verified = True
-                app_logger.info("Gemini API key successfully verified and active globally.")
+                app_logger.info("Optional Gemini API key successfully verified.")
         except Exception as e:
             error_msg = str(e)
             app_logger.warning(f"API Key verification warning: {e}")
@@ -410,18 +414,27 @@ async def set_api_key(data: Dict[str, str]):
         "verified": verified,
         "has_key": bool(active_key),
         "error": error_msg,
-        "message": "Gemini 3.7 / 2.5 Flash connected and verified!" if verified else "API key active."
+        "message": "Optional Gemini enhancement connected and verified." if verified else (
+            "Gemini key saved for optional enhancement." if active_key else "External AI disabled. Local/deterministic engine active."
+        )
     }
 
 
 @app.get("/api/config/api-key-status")
 async def get_api_key_status():
-    """Returns whether a Gemini API key is currently active."""
+    """Returns local and optional external AI availability."""
     active_key = SESSION.get("api_key") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    local_base_url, local_model = get_local_ai_config()
+    engine_status = SESSION["ai_engine"].get_engine_status() if SESSION.get("ai_engine") else {}
     return {
         "has_key": bool(active_key),
-        "model": "gemini-3.7-flash / gemini-2.5-flash",
-        "provider": "Google DeepMind GenAI"
+        "external_llm_available": bool(active_key),
+        "external_model": os.getenv("MODEL_NAME", "gemini-2.5-flash") if active_key else None,
+        "external_provider": "Gemini" if active_key else None,
+        "local_ai_enabled": local_ai_enabled(),
+        "local_model": engine_status.get("local_model", local_model),
+        "local_base_url": engine_status.get("local_base_url", local_base_url),
+        "mode": "local-first + optional Gemini" if active_key else "local/deterministic",
     }
 
 

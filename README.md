@@ -44,7 +44,8 @@ DATA QUALITY ENGINE         STATISTICAL ENGINE           VISUALIZER ENGINE
          └───────────────────────────┼───────────────────────────┘
                                      │
                                      ▼
-                    GROUNDED AI REASONING (Gemini API)
+              LOCAL-FIRST GROUNDED AI REASONING
+             (Optional Gemini only when configured)
                   + MATHEMATICAL EVIDENCE VERIFICATION
                                      │
                                      ▼
@@ -122,6 +123,19 @@ python main.py data/auto_data_analyzer_test.csv
 
 ```bash
 python -m unittest discover -s tests
+```
+
+### Optional AI Configuration
+
+DataLens AI works without any external API key. It uses deterministic local analytics first, can call a local Ollama-compatible model when available, and only uses Gemini as an optional enhancement when `GEMINI_API_KEY` or `GOOGLE_API_KEY` is configured.
+
+```bash
+# Optional local model settings
+export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_MODEL=llama3.1
+
+# Optional Gemini enhancement
+export GEMINI_API_KEY=your_key_here
 ```
 
 ---

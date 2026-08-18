@@ -1,6 +1,6 @@
 /**
  * DataLens AI - High-Performance Controller & UI Engine
- * Floating Top Navbar Hubs • Interactive Ingestion Tabs • Deep Thinking Resume 10.0 Suite • Gemini Integration
+ * Floating Top Navbar Hubs • Interactive Ingestion Tabs • Deep Thinking Resume 10.0 Suite • Local-first AI
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const pasteResumeInput = document.getElementById("pasteResumeInput");
   const analyzePastedResumeBtn = document.getElementById("analyzePastedResumeBtn");
 
-  // Gemini API Key Elements
+  // Optional External AI Key Elements
   const navApiKeyBtn = document.getElementById("navApiKeyBtn");
   const apiKeyModal = document.getElementById("apiKeyModal");
   const closeApiKeyModalBtn = document.getElementById("closeApiKeyModalBtn");
@@ -111,7 +111,103 @@ document.addEventListener("DOMContentLoaded", () => {
   if (navBrandBtn) navBrandBtn.addEventListener("click", () => window.switchHub("hub-home"));
   if (mobileNavToggle) {
     mobileNavToggle.addEventListener("click", () => {
-      navCenterHubs.classList.toggle("mobile-open");
+      if (navCenterHubs) navCenterHubs.classList.toggle("mobile-open");
+    });
+  }
+
+  async function checkGeminiStatus() {
+    try {
+      const res = await fetch("/api/config/api-key-status");
+      const data = await res.json();
+      const hasExternal = Boolean(data.has_key || data.external_llm_available);
+      const localModel = data.local_model || "local model";
+
+      if (navGeminiStatusIcon) navGeminiStatusIcon.textContent = hasExternal ? "⚡" : "●";
+      if (navGeminiStatusText) navGeminiStatusText.textContent = hasExternal ? "AI Enhanced" : "Local Mode";
+      if (homeGeminiStatusPill) {
+        homeGeminiStatusPill.textContent = hasExternal
+          ? "⚡ Optional Gemini enhancement active"
+          : `● Local/deterministic engine ready (${localModel})`;
+        homeGeminiStatusPill.style.color = hasExternal ? "var(--emerald)" : "var(--orange-bright)";
+      }
+      if (modalKeyFeedback) {
+        modalKeyFeedback.textContent = hasExternal
+          ? "External enhancement is configured. The app still uses local/deterministic analysis first."
+          : "No external key configured. Local/deterministic analysis remains active.";
+        modalKeyFeedback.style.color = hasExternal ? "var(--emerald)" : "var(--text-muted)";
+      }
+    } catch (err) {
+      console.warn("AI status check failed:", err);
+      if (navGeminiStatusText) navGeminiStatusText.textContent = "Local Mode";
+      if (homeGeminiStatusPill) {
+        homeGeminiStatusPill.textContent = "● Local/deterministic engine ready";
+        homeGeminiStatusPill.style.color = "var(--orange-bright)";
+      }
+    }
+  }
+
+  function openApiKeyModal() {
+    if (apiKeyModal) apiKeyModal.style.display = "flex";
+    if (modalApiKeyInput) {
+      modalApiKeyInput.value = "";
+      modalApiKeyInput.focus();
+    }
+  }
+
+  function closeApiKeyModal() {
+    if (apiKeyModal) apiKeyModal.style.display = "none";
+  }
+
+  if (navApiKeyBtn) navApiKeyBtn.addEventListener("click", openApiKeyModal);
+  if (closeApiKeyModalBtn) closeApiKeyModalBtn.addEventListener("click", closeApiKeyModal);
+  if (cancelApiKeyModalBtn) cancelApiKeyModalBtn.addEventListener("click", closeApiKeyModal);
+  if (apiKeyModal) {
+    apiKeyModal.addEventListener("click", (e) => {
+      if (e.target === apiKeyModal) closeApiKeyModal();
+    });
+  }
+  if (saveModalApiKeyBtn) {
+    saveModalApiKeyBtn.addEventListener("click", async () => {
+      const key = modalApiKeyInput ? modalApiKeyInput.value.trim() : "";
+      if (!key) {
+        if (modalKeyFeedback) {
+          modalKeyFeedback.textContent = "Enter a Gemini API key to enable optional external enhancement.";
+          modalKeyFeedback.style.color = "var(--amber)";
+        }
+        return;
+      }
+
+      saveModalApiKeyBtn.disabled = true;
+      saveModalApiKeyBtn.textContent = "Verifying...";
+      if (modalKeyFeedback) {
+        modalKeyFeedback.textContent = "Checking the key and refreshing AI engines...";
+        modalKeyFeedback.style.color = "var(--text-muted)";
+      }
+
+      try {
+        const res = await fetch("/api/config/api-key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ api_key: key }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Could not save key.");
+
+        if (modalKeyFeedback) {
+          modalKeyFeedback.textContent = data.message || "Optional external AI enhancement saved.";
+          modalKeyFeedback.style.color = data.verified ? "var(--emerald)" : "var(--amber)";
+        }
+        await checkGeminiStatus();
+        if (data.verified) setTimeout(closeApiKeyModal, 650);
+      } catch (err) {
+        if (modalKeyFeedback) {
+          modalKeyFeedback.textContent = err.message || "Key verification failed.";
+          modalKeyFeedback.style.color = "var(--rose)";
+        }
+      } finally {
+        saveModalApiKeyBtn.disabled = false;
+        saveModalApiKeyBtn.textContent = "Save Optional Key";
+      }
     });
   }
 

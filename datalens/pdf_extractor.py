@@ -5,7 +5,7 @@ Combines 5 extraction tiers:
 2. Layout-Tolerant pdfplumber extraction.
 3. PDFMiner high-level stream with custom LAParams.
 4. Form-field / AcroForm / Annotation text recovery.
-5. Multimodal Google Gemini OCR for image-only scans.
+5. Optional multimodal Gemini OCR for image-only scans when a key is configured.
 """
 
 import os
@@ -100,7 +100,7 @@ class PDFExtractor:
         # 4. Clean and normalize extracted text
         full_text = PDFExtractor._clean_text(full_text)
 
-        # 5. Strategy E: Gemini Multimodal Document OCR (for scanned images, photos or un-OCR'd PDFs)
+        # 5. Strategy E: optional Gemini multimodal OCR for scanned images/photos.
         if (not full_text or len(full_text.split()) < 15) and api_key:
             gemini_ocr_text = PDFExtractor._gemini_multimodal_ocr(file_path, api_key)
             if gemini_ocr_text and len(gemini_ocr_text.split()) > len(full_text.split()):
@@ -238,7 +238,7 @@ class PDFExtractor:
 
     @staticmethod
     def _gemini_multimodal_ocr(file_path: str, api_key: str) -> Optional[str]:
-        """Performs multimodal vision OCR on scanned PDFs and images using Gemini 2.5 / 3.7 Flash."""
+        """Performs optional multimodal vision OCR on scanned PDFs and images."""
         api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         if not api_key:
             return None
@@ -249,7 +249,7 @@ class PDFExtractor:
             import gc
             
             client = genai.Client(api_key=api_key)
-            models_to_try = [os.getenv("MODEL_NAME", "gemini-2.0-flash"), "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest", "gemini-2.5-flash", "gemini-3.7-flash"]
+            models_to_try = [os.getenv("MODEL_NAME", "gemini-2.5-flash"), "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro-latest"]
             models_to_try = list(dict.fromkeys(models_to_try))
 
             with open(file_path, "rb") as f:

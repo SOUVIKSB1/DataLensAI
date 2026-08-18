@@ -70,9 +70,15 @@
       </div>
       
       <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 1.25rem;">
-        Enables <strong>DataLens AI Advanced Intelligence</strong> for multimodal vision OCR, executive recruiter scoring, marksheet evaluation, and conversational analysis.
+        DataLens runs local deterministic analysis by default. Add a Gemini key only for optional enhanced OCR and long-form reasoning when available.
       </p>
+      <label class="form-label" for="modalApiKeyInput">Optional Gemini API Key</label>
+      <input id="modalApiKeyInput" class="form-control" type="password" autocomplete="off" placeholder="Paste key for optional external enhancement">
       <div id="modalKeyFeedback" style="margin-top: 0.75rem; font-size: 0.82rem; text-align: center;"></div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.65rem; margin-top: 1.25rem; flex-wrap: wrap;">
+        <button id="cancelApiKeyModalBtn" class="btn btn-secondary btn-sm">Cancel</button>
+        <button id="saveModalApiKeyBtn" class="btn btn-primary btn-sm">Save Optional Key</button>
+      </div>
     </div>
   </div>
 
@@ -211,7 +217,7 @@
           <div class="capability-card">
             <div class="capability-icon-bubble">🤖</div>
             <h3>5. Grounded AI Analyst & RAG Chat</h3>
-            <p>Query your data in plain English. Powered by Gemini with verifiable evidence citations (`[Evidence: metric=value]`) and 4 autonomous sub-agents for executive summaries.</p>
+            <p>Query your data in plain English with local-first deterministic answers, optional Gemini enhancement when configured, evidence citations (`[Evidence: metric=value]`), and 4 autonomous sub-agents for executive summaries.</p>
             <div style="margin-top: 1rem; color: var(--orange-bright); font-size: 0.82rem; font-weight: 600;">Explore AI Analyst →</div>
           </div>
 
@@ -231,7 +237,7 @@
           How DataLens AI Operates
         </h2>
         <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">
-          A deterministic mathematical foundation elevated with Gemini intelligence.
+          A deterministic mathematical foundation with optional external AI enhancement.
         </p>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; text-align: left;">
@@ -247,8 +253,8 @@
           </div>
           <div style="border-left: 2px solid var(--orange-primary); padding-left: 1rem;">
             <div style="color: var(--orange-bright); font-weight: 700; font-size: 0.85rem; margin-bottom: 0.25rem;">STEP 3</div>
-            <h4 style="color: #FFFFFF; font-size: 1rem; margin-bottom: 0.25rem;">Gemini Reasoning</h4>
-            <p style="color: var(--text-dim); font-size: 0.82rem;">Gemini 3.7 / 2.5 Flash explains findings, rewrites resume bullets, and answers natural language queries.</p>
+            <h4 style="color: #FFFFFF; font-size: 1rem; margin-bottom: 0.25rem;">Local-First Reasoning</h4>
+            <p style="color: var(--text-dim); font-size: 0.82rem;">Deterministic agents answer core questions first; Gemini is used only as an optional enhancement when configured.</p>
           </div>
           <div style="border-left: 2px solid var(--orange-primary); padding-left: 1rem;">
             <div style="color: var(--orange-bright); font-weight: 700; font-size: 0.85rem; margin-bottom: 0.25rem;">STEP 4</div>

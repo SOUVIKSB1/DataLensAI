@@ -113,7 +113,7 @@ Respond ONLY with a JSON object in this exact schema without markdown backticks:
   ]
 }}"""
         try:
-            models_to_try = [os.getenv("MODEL_NAME", "gemini-2.5-flash"), "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
+            models_to_try = [os.getenv("MODEL_NAME", "gemini-2.5-flash"), "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
             for m in list(dict.fromkeys(models_to_try)):
                 try:
                     resp = self.client.models.generate_content(model=m, contents=prompt)
@@ -365,7 +365,7 @@ Generate an authoritative, empowering, and actionable Academic Guidance Report i
 Do NOT mention any third-party AI provider names, refer strictly to DataLens AI."""
 
             try:
-                models_to_try = [os.getenv("MODEL_NAME", "gemini-2.0-flash"), "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest", "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
+                models_to_try = [os.getenv("MODEL_NAME", "gemini-2.5-flash"), "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-1.5-flash"]
                 for m in list(dict.fromkeys(models_to_try)):
                     try:
                         resp = self.client.models.generate_content(model=m, contents=prompt)

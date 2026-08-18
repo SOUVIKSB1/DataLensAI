@@ -14,6 +14,7 @@ from .logger import app_logger
 from .privacy import PrivacyScanner
 from .rag_engine import RAGEngine
 from .agents import AgentOrchestrator
+from .local_ai import call_local_llm, get_local_ai_config, local_ai_enabled
 
 
 class AIEngine:
@@ -41,6 +42,7 @@ class AIEngine:
         self.stats = stats_dict
         self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self.model_name = os.getenv("MODEL_NAME", "gemini-2.5-flash")
+        self.local_ai_base_url, self.local_model_name = get_local_ai_config()
         
         # 2. Agent Orchestrator
         self.orchestrator = AgentOrchestrator(self.df, self.profiler, self.quality, self.stats)
@@ -66,13 +68,13 @@ class AIEngine:
                 app_logger.warning(f"Could not initialize LLM client: {e}")
                 self.client = None
 
-    def _call_gemini(self, prompt: str) -> Optional[str]:
-        """Versatile caller supporting models.generate_content, interactions.create, and legacy SDKs."""
+    def _call_external_llm(self, prompt: str) -> Optional[str]:
+        """Versatile Gemini caller used only when an API key/client is available."""
         if not self.client:
             return None
 
         # Candidate models to try in sequence
-        models_to_try = [self.model_name, "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest", "gemini-2.5-flash", "gemini-3.7-flash"]
+        models_to_try = [self.model_name, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro-latest"]
         models_to_try = list(dict.fromkeys(models_to_try))
 
         # 1. Try modern google-genai SDK
@@ -103,6 +105,25 @@ class AIEngine:
                 continue
 
         return None
+
+    def _call_llm(self, prompt: str, *, prefer_local: bool = True) -> Optional[str]:
+        """Returns best-effort generated text from local AI first, then optional Gemini."""
+        if prefer_local and local_ai_enabled():
+            local_text = call_local_llm(prompt)
+            if local_text:
+                return local_text
+
+        return self._call_external_llm(prompt)
+
+    def get_engine_status(self) -> Dict[str, Any]:
+        """Exposes AI availability for API/UI status badges."""
+        return {
+            "local_ai_enabled": local_ai_enabled(),
+            "local_model": self.local_model_name,
+            "local_base_url": self.local_ai_base_url,
+            "external_llm_available": bool(self.client),
+            "external_model": self.model_name if self.client else None,
+        }
 
     def _build_grounded_context(self) -> str:
         """Constructs a factual, deterministic, privacy-sanitized summary context."""
@@ -141,8 +162,8 @@ class AIEngine:
         """
         context = self._build_grounded_context()
 
-        # If LLM is available, query Gemini
-        if self.client:
+        # Try local LLM first, then optional external LLM if configured.
+        if local_ai_enabled() or self.client:
             prompt = f"""You are DataLens AI, an elite Principal Data Scientist, ML Architect, and Enterprise Business Strategist.
 Conduct an extensive, high-impact Executive Intelligence Briefing on the following mathematically verified dataset:
 
@@ -167,7 +188,7 @@ Generate an authoritative, boardroom-ready report in GitHub-flavored Markdown co
 - Recommended ML models (e.g. Random Forest Classifier/Regressor) and primary feature drivers.
 
 RULE: Every critical metric claim MUST include a bracketed evidence tag `[Evidence: metric=value]` to maintain 100% mathematical verifiability."""
-            result = self._call_gemini(prompt)
+            result = self._call_llm(prompt)
             if result:
                 return result
 
@@ -214,7 +235,81 @@ RULE: Every critical metric claim MUST include a bracketed evidence tag `[Eviden
                     "data": None,
                 }
 
-        # 2. Priority: DataLens AI Grounded Reasoning with Full Dataset Context
+        # 2. Deterministic calculations before any generative model.
+        agg_match = re.search(r"(highest|maximum|max|lowest|minimum|min|average|avg|mean)\s+([\w_]+)(?:\s+(?:by|in|for|per)\s+([\w_]+))?", q)
+        if agg_match:
+            op, target_term, group_term = agg_match.groups()
+            target_col = self._match_column_name(target_term)
+            group_col = self._match_column_name(group_term) if group_term else None
+
+            if target_col and pd.api.types.is_numeric_dtype(self.raw_df[target_col]):
+                if group_col and group_col in self.raw_df.columns:
+                    if op in ["highest", "maximum", "max"]:
+                        res = self.raw_df.groupby(group_col)[target_col].max().reset_index().sort_values(by=target_col, ascending=False)
+                        top_grp = res.iloc[0][group_col]
+                        top_val = res.iloc[0][target_col]
+                        return {
+                            "answer": f"The `{group_col}` with the highest `{target_col}` is **{top_grp}** with a value of **{top_val:,.2f}**.\n\n`[Evidence: Group Maximum calculation]`",
+                            "data": res.to_dict(orient="records"),
+                        }
+                    if op in ["lowest", "minimum", "min"]:
+                        res = self.raw_df.groupby(group_col)[target_col].min().reset_index().sort_values(by=target_col, ascending=True)
+                        low_grp = res.iloc[0][group_col]
+                        low_val = res.iloc[0][target_col]
+                        return {
+                            "answer": f"The `{group_col}` with the lowest `{target_col}` is **{low_grp}** with a value of **{low_val:,.2f}**.\n\n`[Evidence: Group Minimum calculation]`",
+                            "data": res.to_dict(orient="records"),
+                        }
+
+                    res = self.raw_df.groupby(group_col)[target_col].mean().round(2).reset_index().sort_values(by=target_col, ascending=False)
+                    top_grp = res.iloc[0][group_col]
+                    top_val = res.iloc[0][target_col]
+                    return {
+                        "answer": f"The average `{target_col}` across `{group_col}` is highest in **{top_grp}** at **{top_val:,.2f}**.\n\n`[Evidence: Group Mean calculation]`",
+                        "data": res.to_dict(orient="records"),
+                    }
+
+                if op in ["highest", "maximum", "max"]:
+                    val = self.raw_df[target_col].max()
+                    return {"answer": f"The maximum value of `{target_col}` is **{val:,.2f}**.\n\n`[Evidence: Max={val}]`", "data": None}
+                if op in ["lowest", "minimum", "min"]:
+                    val = self.raw_df[target_col].min()
+                    return {"answer": f"The minimum value of `{target_col}` is **{val:,.2f}**.\n\n`[Evidence: Min={val}]`", "data": None}
+
+                val = self.raw_df[target_col].mean()
+                return {"answer": f"The overall average (mean) of `{target_col}` is **{val:,.2f}**.\n\n`[Evidence: Mean={val:,.2f}]`", "data": None}
+
+        if "missing" in q or "null" in q or "na" in q:
+            missing_data = self.raw_df.isna().sum().reset_index()
+            missing_data.columns = ["Column", "Missing Count"]
+            missing_data = missing_data[missing_data["Missing Count"] > 0]
+            if missing_data.empty:
+                return {"answer": "There are **0 missing values** across all columns in this dataset.\n\n`[Evidence: 100% Completeness]`", "data": None}
+            return {
+                "answer": f"Detected missing values in **{len(missing_data)} column(s)**:\n\n`[Evidence: Total Missing Cells = {self.quality.get('total_missing_cells')}]`",
+                "data": missing_data.to_dict(orient="records"),
+            }
+
+        if "outlier" in q or "anomaly" in q or "extreme" in q:
+            outliers = self.quality.get("outliers", {})
+            outlier_rows = []
+            for col, o in outliers.items():
+                if o["iqr"]["outlier_count"] > 0:
+                    outlier_rows.append({
+                        "Column": col,
+                        "Outliers": o["iqr"]["outlier_count"],
+                        "Lower Bound": o["iqr"]["lower_bound"],
+                        "Upper Bound": o["iqr"]["upper_bound"],
+                        "Outlier Values": str(o["iqr"]["outlier_values"]),
+                    })
+            if outlier_rows:
+                return {
+                    "answer": f"Detected IQR outliers in **{len(outlier_rows)} column(s)**:\n\n`[Evidence: Interquartile Range method]`",
+                    "data": outlier_rows,
+                }
+            return {"answer": "No statistical outliers detected via IQR method.\n\n`[Evidence: Zero values outside [Q1-1.5IQR, Q3+1.5IQR]]`", "data": None}
+
+        # 3. DataLens AI Grounded Reasoning with Full Dataset Context
         grounded_ctx = self._build_grounded_context()
         rag_docs = RAGEngine.search(user_query)
         rag_context = "\n".join([f"• **{d['title']}**: {d['content']}" for d in rag_docs]) if rag_docs else ""
@@ -230,7 +325,7 @@ User question: {user_query}
 
 Provide a direct, crystal-clear, and helpful answer in Markdown. Keep explanations simple, practical, and grounded in the data. Cite exact numbers and column names where helpful. Never mention third-party AI provider names, refer exclusively to DataLens AI."""
 
-        res_text = self._call_gemini(prompt)
+        res_text = self._call_llm(prompt)
         if res_text:
             return {"answer": res_text, "data": None}
 

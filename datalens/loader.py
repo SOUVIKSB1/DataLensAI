@@ -297,8 +297,8 @@ def _load_pdf(file_path: str) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     if not full_text:
         raise ValueError(
             f"The uploaded document '{os.path.basename(file_path)}' contains no selectable text or tabular cells. "
-            "It appears to be a scanned image/photo. If your Gemini API free-tier quota is reached, "
-            "please paste the text directly into the '📋 Paste Text Directly' tab or upload a standard text PDF, CSV, or Excel file."
+            "It appears to be a scanned image/photo. Optional Gemini OCR is used only when a key is configured; "
+            "otherwise paste the text directly into the Paste Text Directly tab or upload a standard text PDF, CSV, or Excel file."
         )
 
     # Case D: General text document (e.g. report, transcript, essay) -> structured analysis table
@@ -334,4 +334,3 @@ class DataLoader:
             return df, None
         except Exception as e:
             return None, str(e)
-

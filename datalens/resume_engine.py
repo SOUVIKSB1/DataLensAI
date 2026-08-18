@@ -401,7 +401,7 @@ Format each as:
 # 🗓️ 30-Day Strategic Roadmap to Reach a 9.8/10 Score
 (Week-by-week actionable plan to elevate their resume and GitHub/portfolio to world-class standards.)
 """
-                models_to_try = [os.getenv("MODEL_NAME", "gemini-2.0-flash"), "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest", "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
+                models_to_try = [os.getenv("MODEL_NAME", "gemini-2.5-flash"), "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-1.5-flash"]
                 for m in list(dict.fromkeys(models_to_try)):
                     try:
                         # 1. Try models.generate_content
