@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataLens AI | Grounded Intelligence & Data Science Platform</title>
+  <meta name="description" content="Production-grade automated exploratory data analysis, machine learning studio, and conversational data analyst.">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <!-- Chart.js for high-performance canvas charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Marked.js for markdown rendering in AI responses -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+</head>
+<body>
+
+  <!-- ================= FLOATING LIQUID GLASS TOP NAVBAR ================= -->
+  <div class="navbar-container">
+    <header class="floating-navbar">
+      
+      <!-- Brand Logo -->
+      <div class="nav-brand-section" id="navBrandBtn">
+        <div class="brand-icon-bubble">🔬</div>
+        <div class="brand-title-group">
+          <h2>DataLens <span>AI</span></h2>
+          <p>Grounded Intelligence</p>
+        </div>
+      </div>
+
+      <!-- Center Hub Navigation (Locked until dataset is uploaded) -->
+      <nav class="nav-center-hubs hidden-nav" id="navCenterHubs">
+        <button class="hub-tab-btn active" data-hub="hub-home"><span class="hub-icon">🏠</span> <span>Home</span></button>
+        <button class="hub-tab-btn" data-hub="hub-resume" id="navResumeBtn" style="display: none;"><span class="hub-icon">💼</span> <span>Resume AI</span></button>
+        <button class="hub-tab-btn" data-hub="hub-data"><span class="hub-icon">📊</span> <span>Data Explorer</span></button>
+        <button class="hub-tab-btn" data-hub="hub-quality"><span class="hub-icon">🧼</span> <span>Quality & Cleaning</span></button>
+        <button class="hub-tab-btn" data-hub="hub-ml"><span class="hub-icon">🧠</span> <span>ML Studio</span></button>
+        <button class="hub-tab-btn" data-hub="hub-ai"><span class="hub-icon">🤖</span> <span>AI Analyst</span></button>
+        <button class="hub-tab-btn" data-hub="hub-export"><span class="hub-icon">📑</span> <span>Export</span></button>
+      </nav>
+
+      <!-- Right Actions -->
+      <div class="nav-right-group">
+        <div class="dataset-pill" id="topDatasetPill" style="display: none;">
+          <span class="status-dot"></span>
+          <span id="topDatasetName">No dataset</span>
+        </div>
+        <button id="resetDataBtn" class="btn btn-secondary btn-sm" style="display: none;">↺ Raw</button>
+        <button id="quickSampleBtn" class="btn btn-outline-orange btn-sm">📊 Sample Data</button>
+        <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle navigation">☰</button>
+      </div>
+
+    </header>
+  </div>
+
+  <!-- ================= MAIN CONTENT APP ================= -->
+  <main class="app-main">
+
+    <!-- ================= HUB 1: HOME & SHOWCASE ================= -->
+    <section id="hub-home" class="view-panel active">
+      
+      <!-- Hero Value Prop -->
+      <div style="text-align: center; max-width: 900px; margin: 0 auto 3rem;">
+        <div class="home-hero-badge">⚡ Autonomous Intelligence Platform</div>
+        <h1 class="home-hero-title">Analyze, Clean & Master Any <span>Dataset or Resume</span></h1>
+        <p class="home-hero-subtitle">
+          Transform raw files into deterministic statistical truth, automated machine learning models, PII privacy audits, and ATS-optimized career scorecards with zero AI hallucinations.
+        </p>
+
+        <!-- Quick Action Hero Triggers -->
+        <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+          <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">📁 Ingest Your File</button>
+          <button id="heroSampleBtn" class="btn btn-outline-orange">📊 Explore Sample HR Data</button>
+          <button id="heroResumeBtn" class="btn btn-secondary">💼 Test Resume AI Scoring</button>
+        </div>
+      </div>
+
+      <!-- Ingestion & Privacy Grid -->
+      <div class="grid-2" style="margin-bottom: 3.5rem;">
+        <!-- Drop Zone -->
+        <div class="glass-card highlight">
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 1rem;">📁 Universal Data & Document Ingestion</h3>
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-icon">📤</div>
+            <h4 style="font-size: 1.15rem; font-weight: 700; color: #FFFFFF;">Drag & Drop your file here</h4>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.4rem; margin-bottom: 1.25rem;">
+              Auto-detects delimiters, encodings, nested structures & tables
+            </p>
+            
+            <!-- Supported Format Badges -->
+            <div style="display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.5rem;">
+              <span class="badge badge-cat">CSV / TSV</span>
+              <span class="badge badge-bool">Excel (.xlsx, .xls)</span>
+              <span class="badge badge-num">JSON / JSONL</span>
+              <span class="badge badge-date">Apache Parquet</span>
+              <span class="badge badge-id">SQLite (.db)</span>
+              <span class="badge" style="background: rgba(244, 63, 94, 0.15); color: #FB7185; border: 1px solid rgba(244, 63, 94, 0.3);">PDF Tables</span>
+              <span class="badge" style="background: rgba(255, 107, 0, 0.18); color: #FFA04D; border: 1px solid var(--border-glass-orange);">Resume / CV</span>
+            </div>
+
+            <input type="file" id="fileInput" accept=".csv, .tsv, .xlsx, .xls, .xlsm, .json, .jsonl, .parquet, .sqlite, .db, .pdf, .txt" style="display: none;">
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Browse Computer</button>
+          </div>
+        </div>
+
+        <!-- Privacy Scanner & Key Config -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <div class="glass-card">
+            <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 0.75rem;">🛡️ AI Privacy & PII Safety Shield</h3>
+            <div id="privacyStatusBox">
+              <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+                Personally Identifiable Information (Emails, Phones, Credit Cards, PAN, Aadhaar, SSN, Passwords) is automatically detected and token-masked before any external LLM reasoning.
+              </p>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 0.75rem;">🔑 Optional Google Gemini API Key</h3>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="password" id="apiKeyInput" class="form-control" placeholder="Enter Gemini API key (optional)">
+              <button id="saveApiKeyBtn" class="btn btn-outline-orange btn-sm">Save</button>
+            </div>
+            <p style="color: var(--text-dim); font-size: 0.78rem; margin-top: 0.5rem;">
+              100% of statistical math, data cleaning, and ML runs offline deterministically.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Capability Showcase: What You Can Do -->
+      <div style="margin-bottom: 3.5rem;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <h2 style="font-size: 1.8rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.03em;">
+            What Can You Do With <span>DataLens AI</span>?
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.35rem;">
+            A complete end-to-end intelligence suite combining deterministic Python calculations with grounded AI interpretation.
+          </p>
+        </div>
+
+        <div class="capability-grid">
+          <div class="capability-card">
+            <div class="capability-icon-bubble">📊</div>
+            <h3>1. Semantic Profiling & EDA</h3>
+            <p>Classify columns into Identifiers, Numerical, Categorical, Dates, and Booleans. Inspect memory footprints, sparsity rates, and browse records with instant pagination.</p>
+          </div>
+
+          <div class="capability-card">
+            <div class="capability-icon-bubble">🧼</div>
+            <h3>2. Quality & 1-Click Cleaning</h3>
+            <p>Audit missing value distributions, detect duplicate rows, identify IQR statistical outliers ($Q_1 - 1.5\text{IQR}, Q_3 + 1.5\text{IQR}$), and apply one-click Winsorization.</p>
+          </div>
+
+          <div class="capability-card">
+            <div class="capability-icon-bubble">🔢</div>
+            <h3>3. Statistics & Correlations</h3>
+            <p>Compute central tendencies (Mean, Median), Skewness, Kurtosis, and pairwise Pearson ($r$) and Spearman ($\rho$) correlation dynamics to detect collinearity.</p>
+          </div>
+
+          <div class="capability-card">
+            <div class="capability-icon-bubble">🧠</div>
+            <h3>4. Automated Machine Learning</h3>
+            <p>Auto-detect problem types, train Random Forest and Linear/Logistic models, evaluate $R^2$, RMSE, Accuracy, F1, and visualize Top Feature Importances.</p>
+          </div>
+
+          <div class="capability-card">
+            <div class="capability-icon-bubble">🤖</div>
+            <h3>5. Grounded AI Analyst & RAG</h3>
+            <p>Chat with your data in natural language with zero hallucination. Every claim is validated with mathematical evidence tags like <code>[Evidence: Pearson r=0.82]</code>.</p>
+          </div>
+
+          <div class="capability-card">
+            <div class="capability-icon-bubble">💼</div>
+            <h3>6. AI Resume & CV Intelligence</h3>
+            <p>Upload a Resume PDF to get an instant 0–100 Market Readiness Score, ATS quantification metrics, missing tech skill gaps, and Google XYZ bullet point rewrites.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4-Step How It Works Pipeline -->
+      <div class="glass-card" style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; color: #FFFFFF; margin-bottom: 0.5rem; text-align: center;">How DataLens AI Works</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-bottom: 1.5rem;">The engine philosophy: Python calculates the truth, AI reasons on top of it.</p>
+        
+        <div class="workflow-steps-box">
+          <div class="step-card">
+            <div class="step-number">Step 01</div>
+            <h4 style="color: #FFFFFF; font-size: 0.98rem; margin-bottom: 0.35rem;">Ingest & Recover</h4>
+            <p style="font-size: 0.84rem; color: var(--text-muted);">Auto-detects delimiters, encodings, and parses CSV, Excel, Parquet, JSON, SQLite, or PDF.</p>
+          </div>
+
+          <div class="step-card">
+            <div class="step-number">Step 02</div>
+            <h4 style="color: #FFFFFF; font-size: 0.98rem; margin-bottom: 0.35rem;">Privacy Guard</h4>
+            <p style="font-size: 0.84rem; color: var(--text-muted);">Scans for PII (Emails, Phones, IDs) and redacts sensitive tokens to protect your privacy.</p>
+          </div>
+
+          <div class="step-card">
+            <div class="step-number">Step 03</div>
+            <h4 style="color: #FFFFFF; font-size: 0.98rem; margin-bottom: 0.35rem;">Deterministic Core</h4>
+            <p style="font-size: 0.84rem; color: var(--text-muted);">Python, Scipy, and Scikit-Learn calculate exact statistical summaries, anomalies, and ML metrics.</p>
+          </div>
+
+          <div class="step-card">
+            <div class="step-number">Step 04</div>
+            <h4 style="color: #FFFFFF; font-size: 0.98rem; margin-bottom: 0.35rem;">Grounded Output</h4>
+            <p style="font-size: 0.84rem; color: var(--text-muted);">Generate Executive PDF reports, Cleaned CSVs, and Cryptographic JSON reproducibility audits.</p>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= HUB 1.5: RESUME & CV STUDIO ================= -->
+    <section id="hub-resume" class="view-panel">
+      <div class="hero-view-header">
+        <h1>💼 Executive Career Intelligence & <span>Resume Studio</span></h1>
+        <p>Deep-thinking multi-dimensional market audit, ATS architecture evaluation, Google XYZ rewrites, and interview preparation scored out of 10.0.</p>
+      </div>
+
+      <!-- Master Score Banner & 10.0 KPI Grid -->
+      <div class="glass-card highlight" style="margin-bottom: 2rem; padding: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+          <div>
+            <div style="font-size: 0.8rem; font-weight: 800; color: var(--orange-bright); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.35rem;">Overall Market Readiness Score</div>
+            <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+              <span id="resumeMasterScore" style="font-size: 3.8rem; font-weight: 900; color: #FFFFFF; letter-spacing: -0.04em; text-shadow: 0 0 30px rgba(255, 107, 0, 0.5);">--</span>
+              <span style="font-size: 1.6rem; color: var(--text-dim); font-weight: 700;">/ 10.0</span>
+            </div>
+            <div id="resumePercentileBadge" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.85rem; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 700; margin-top: 0.5rem; background: rgba(255, 107, 0, 0.12); color: var(--orange-bright); border: 1px solid var(--border-glass-orange);">
+              Calculating Percentile Tier...
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; min-width: 240px;">
+            <div style="font-size: 0.82rem; color: var(--text-muted);">Candidate Document: <b id="resumeDocName" style="color: #FFFFFF;">Resume.pdf</b></div>
+            <div style="font-size: 0.82rem; color: var(--text-muted);">Total Analyzed Bullets: <b id="resumeBulletCount" style="color: var(--orange-bright);">0</b></div>
+            <div style="font-size: 0.82rem; color: var(--text-muted);">Quantified Impact Ratio: <b id="resumeQuantRatio" style="color: #10B981;">0%</b></div>
+          </div>
+        </div>
+
+        <!-- 5-Dimensional Sub-Scores Grid -->
+        <div class="metrics-grid" id="resumeMetricsGrid" style="margin-bottom: 0;"></div>
+      </div>
+
+      <!-- Deep Analysis Sub-Navigation Pills -->
+      <div class="subnav-pills-bar">
+        <button class="subnav-pill active" data-subview="sub-resume-audit">🔍 Executive Recruiter Audit & Rewrites</button>
+        <button class="subnav-pill" data-subview="sub-resume-skills">🎯 2026 Tech Radar & Skill Gaps</button>
+        <button class="subnav-pill" data-subview="sub-resume-profile">👤 Candidate ATS Profile Diagnostic</button>
+        <button class="subnav-pill" data-subview="sub-resume-paste">📋 Paste Resume Text Directly</button>
+      </div>
+
+      <!-- Subview 1: Executive Audit & AI Deep Thinking -->
+      <div id="sub-resume-audit" class="subview-section active">
+        <div class="glass-card highlight">
+          <div id="resumeSuggestionsContent" style="line-height: 1.85; font-size: 0.96rem;"></div>
+        </div>
+      </div>
+
+      <!-- Subview 2: Skills & Tech Radar -->
+      <div id="sub-resume-skills" class="subview-section" style="display: none;">
+        <div class="glass-card">
+          <h3 style="font-size: 1.2rem; color: #FFFFFF; margin-bottom: 1.25rem;">🎯 2026 Market Competency Inventory & Gaps</h3>
+          <div id="resumeSkillsContainer"></div>
+        </div>
+      </div>
+
+      <!-- Subview 3: Candidate ATS Profile Diagnostic -->
+      <div id="sub-resume-profile" class="subview-section" style="display: none;">
+        <div class="glass-card">
+          <h3 style="font-size: 1.2rem; color: #FFFFFF; margin-bottom: 1.25rem;">👤 ATS Readability & Candidate Diagnostic</h3>
+          <div id="resumeProfileContainer"></div>
+        </div>
+      </div>
+
+      <!-- Subview 4: Paste Resume Text Directly -->
+      <div id="sub-resume-paste" class="subview-section" style="display: none;">
+        <div class="glass-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h3 style="font-size: 1.1rem; color: #FFFFFF;">📋 Paste Raw Resume Text For Instant Deep Audit</h3>
+            <button id="analyzePastedResumeBtn" class="btn btn-primary btn-sm">⚡ Run Deep Thinking Audit</button>
+          </div>
+          <textarea id="pastedResumeInput" class="form-control" rows="8" placeholder="Paste your resume or CV text here to instantly compute your multi-dimensional 10.0 score and Google XYZ bullet rewrites..."></textarea>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= HUB 2: DATA EXPLORER ================= -->
+    <section id="hub-data" class="view-panel">
+      <div class="hero-view-header">
+        <h1>📊 Data <span>Explorer & Schema</span></h1>
+        <p>Structural overview, column semantic classification, interactive data browser, and custom visualizations.</p>
+      </div>
+
+      <!-- Sub-Nav Pills -->
+      <div class="subnav-pills-bar">
+        <button class="subnav-pill active" data-subview="sub-overview">Overview & Schema</button>
+        <button class="subnav-pill" data-subview="sub-records">Raw Data Records</button>
+        <button class="subnav-pill" data-subview="sub-stats">Statistical Summary</button>
+        <button class="subnav-pill" data-subview="sub-visuals">Visualizations</button>
+      </div>
+
+      <!-- Subview 1: Overview & Schema -->
+      <div id="sub-overview" class="subview-section active">
+        <div class="metrics-grid" id="overviewMetrics"></div>
+        <div class="glass-card" style="margin-bottom: 1.75rem;">
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 0.5rem;">Semantic Column Breakdown</h3>
+          <div class="table-glass-container">
+            <table id="schemaTable">
+              <thead>
+                <tr>
+                  <th>Column Name</th>
+                  <th>Semantic Type</th>
+                  <th>Data Type</th>
+                  <th>Missing Values</th>
+                  <th>Unique Count</th>
+                  <th>Sample Values</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subview 2: Raw Records -->
+      <div id="sub-records" class="subview-section" style="display: none;">
+        <div class="glass-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+            <h3 style="font-size: 1.15rem; color: #FFFFFF;">🔍 Interactive Data Records</h3>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button id="prevPageBtn" class="btn btn-secondary btn-sm">Previous</button>
+              <span id="pageIndicator" style="font-size: 0.85rem; color: var(--text-muted);">Page 1</span>
+              <button id="nextPageBtn" class="btn btn-secondary btn-sm">Next</button>
+            </div>
+          </div>
+          <div class="table-glass-container">
+            <table id="rawDataTable">
+              <thead id="rawDataTableHead"></thead>
+              <tbody id="rawDataTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subview 3: Statistics -->
+      <div id="sub-stats" class="subview-section" style="display: none;">
+        <div class="glass-card">
+          <div class="table-glass-container">
+            <table id="statsTable">
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>Mean</th>
+                  <th>Median</th>
+                  <th>Std Dev</th>
+                  <th>Min</th>
+                  <th>Q1 (25%)</th>
+                  <th>Q3 (75%)</th>
+                  <th>Max</th>
+                  <th>Skewness</th>
+                  <th>Distribution Shape</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subview 4: Visuals -->
+      <div id="sub-visuals" class="subview-section" style="display: none;">
+        <div class="glass-card" style="margin-bottom: 1.75rem;">
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 1rem;">Custom Chart Builder</h3>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label" for="chartSelectCol">Select Feature Column</label>
+              <select id="chartSelectCol" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="chartSelectType">Chart Visualization Type</label>
+              <select id="chartSelectType" class="form-control">
+                <option value="bar">Bar Chart (Frequencies & Categories)</option>
+                <option value="line">Line Chart (Trends & Progressions)</option>
+              </select>
+            </div>
+          </div>
+          <button id="renderChartBtn" class="btn btn-primary">Generate Visualization</button>
+        </div>
+
+        <div class="glass-card">
+          <h3 style="font-size: 1.1rem; color: var(--orange-bright); margin-bottom: 1rem;" id="customChartTitle">Chart Preview</h3>
+          <canvas id="customChartCanvas" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= HUB 3: HEALTH & QUALITY ================= -->
+    <section id="hub-quality" class="view-panel">
+      <div class="hero-view-header">
+        <h1>🧼 Data Health & <span>Quality Engine</span></h1>
+        <p>Audit missing values, detect duplicates, inspect IQR statistical outliers, and execute one-click data cleaning.</p>
+      </div>
+
+      <!-- Sub-Nav Pills -->
+      <div class="subnav-pills-bar">
+        <button class="subnav-pill active" data-subview="sub-cleaning">Quality & Cleaning Studio</button>
+        <button class="subnav-pill" data-subview="sub-outliers">IQR Outliers & Anomalies</button>
+        <button class="subnav-pill" data-subview="sub-correlations">Correlation Dynamics</button>
+      </div>
+
+      <!-- Subview 1: Quality & Cleaning -->
+      <div id="sub-cleaning" class="subview-section active">
+        <div class="grid-2">
+          <div class="glass-card">
+            <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 1rem;">Missing Value Breakdown</h3>
+            <canvas id="missingValuesChart" height="230"></canvas>
+          </div>
+          <div class="glass-card highlight">
+            <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 1rem;">🧹 One-Click Cleaning Pipeline</h3>
+            <div class="form-group">
+              <label class="form-label"><input type="checkbox" id="cleanDropDups" checked style="accent-color: var(--orange-primary);"> Drop Duplicate Rows</label>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cleanMissingStrat">Missing Value Strategy</label>
+              <select id="cleanMissingStrat" class="form-control">
+                <option value="none">None (Preserve missing values)</option>
+                <option value="impute_mean_mode">Impute Mean (Numeric) / Mode (Categorical)</option>
+                <option value="impute_median">Impute Median (Numeric) / Mode (Categorical)</option>
+                <option value="drop_rows">Drop Incomplete Rows</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cleanOutlierStrat">Outlier Strategy (IQR)</label>
+              <select id="cleanOutlierStrat" class="form-control">
+                <option value="none">None (Keep outliers)</option>
+                <option value="cap_iqr">Cap to IQR Bounds (Winsorize)</option>
+                <option value="trim_iqr">Trim Outlier Rows</option>
+              </select>
+            </div>
+            <button id="applyCleaningBtn" class="btn btn-primary" style="width: 100%;">🚀 Apply Cleaning Transformations</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subview 2: Outliers -->
+      <div id="sub-outliers" class="subview-section" style="display: none;">
+        <div class="glass-card">
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 1rem;">Detected IQR Outliers</h3>
+          <div class="table-glass-container">
+            <table id="outliersTable">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Outlier Count</th>
+                  <th>Outlier %</th>
+                  <th>Lower Bound</th>
+                  <th>Upper Bound</th>
+                  <th>Sample Outlier Values</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subview 3: Correlations -->
+      <div id="sub-correlations" class="subview-section" style="display: none;">
+        <div class="glass-card">
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 1rem;">Top Pairwise Feature Correlations</h3>
+          <div class="table-glass-container">
+            <table id="correlationTable">
+              <thead>
+                <tr>
+                  <th>Feature 1</th>
+                  <th>Feature 2</th>
+                  <th>Pearson r</th>
+                  <th>Spearman rho</th>
+                  <th>Strength</th>
+                  <th>Direction</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= HUB 4: ML STUDIO ================= -->
+    <section id="hub-ml" class="view-panel">
+      <div class="hero-view-header">
+        <h1>🧠 Machine <span>Learning Studio</span></h1>
+        <p>Automated problem detection, supervised regression & classification training, and feature importance rankings.</p>
+      </div>
+
+      <div class="glass-card" style="margin-bottom: 1.75rem;">
+        <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 1rem;">Model Configuration</h3>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="mlTargetCol">Target Column to Predict</label>
+            <select id="mlTargetCol" class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="mlModelName">Algorithm</label>
+            <select id="mlModelName" class="form-control">
+              <option value="Random Forest">Random Forest</option>
+              <option value="Linear / Logistic Regression">Linear / Logistic Regression</option>
+            </select>
+          </div>
+        </div>
+        <button id="trainMlBtn" class="btn btn-primary">🚀 Train & Evaluate Model</button>
+      </div>
+
+      <div id="mlResultsContainer" style="display: none;">
+        <div class="metrics-grid" id="mlMetricsGrid"></div>
+        <div class="glass-card">
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 1rem;">Top Feature Importances</h3>
+          <canvas id="mlImportanceChart" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= HUB 5: AI INTELLIGENCE ================= -->
+    <section id="hub-ai" class="view-panel">
+      <div class="hero-view-header">
+        <h1>🤖 AI Intelligence & <span>Grounded Analyst</span></h1>
+        <p>Autonomous multi-agent executive briefings, natural language data querying with zero hallucination, and RAG knowledge retrieval.</p>
+      </div>
+
+      <!-- Sub-Nav Pills -->
+      <div class="subnav-pills-bar">
+        <button class="subnav-pill active" data-subview="sub-briefing">Executive AI Briefing</button>
+        <button class="subnav-pill" data-subview="sub-chat">AI Analyst Chatbot</button>
+        <button class="subnav-pill" data-subview="sub-rag">RAG Knowledge Base</button>
+      </div>
+
+      <!-- Subview 1: Executive Briefing -->
+      <div id="sub-briefing" class="subview-section active">
+        <div class="glass-card" style="margin-bottom: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <span style="color: var(--text-muted);">Compile an autonomous multi-agent executive briefing</span>
+            <button id="refreshBriefingBtn" class="btn btn-primary">⚡ Generate AI Briefing</button>
+          </div>
+        </div>
+
+        <div class="glass-card" id="briefingContentBox" style="line-height: 1.8; font-size: 0.96rem;">
+          <p style="color: var(--text-muted);">Click 'Generate AI Briefing' to compile executive insights.</p>
+        </div>
+      </div>
+
+      <!-- Subview 2: Chatbot -->
+      <div id="sub-chat" class="subview-section" style="display: none;">
+        <div class="chat-glass-window">
+          <div class="chat-messages-box" id="chatMessages">
+            <div class="chat-bubble assistant">
+              👋 Hello! I am your <b>DataLens AI Analyst</b>. Ask me anything about your dataset (e.g. <i>"What is the average salary by department?"</i> or <i>"Which column has outliers?"</i>).
+            </div>
+          </div>
+          <form id="chatForm" class="chat-input-bar">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Ask a question about your data..." autocomplete="off">
+            <button type="submit" class="btn btn-primary">Send</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Subview 3: RAG Base -->
+      <div id="sub-rag" class="subview-section" style="display: none;">
+        <div class="glass-card" style="margin-bottom: 1.75rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <input type="text" id="ragSearchInput" class="form-control" placeholder="Search concepts (e.g. 'Pearson correlation', 'IQR outlier', 'R2 score', 'Debt-to-equity')">
+          </div>
+        </div>
+        <div id="ragResultsContainer" style="display: flex; flex-direction: column; gap: 1.25rem;"></div>
+      </div>
+    </section>
+
+    <!-- ================= HUB 6: EXPORT ================= -->
+    <section id="hub-export" class="view-panel">
+      <div class="hero-view-header">
+        <h1>📑 Export Reports & <span>Reproducibility</span></h1>
+        <p>Download executive PDF audit reports, cleaned CSV datasets, and cryptographic JSON audit logs with SHA-256 checksums.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="glass-card highlight">
+          <h3 style="font-size: 1.2rem; color: #FFFFFF; margin-bottom: 0.5rem;">📄 Executive PDF Report</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6;">Printable PDF audit report containing dataset schema, quality health, correlation findings, and AI recommendations.</p>
+          <a href="/api/export/pdf" download class="btn btn-primary" style="width: 100%;">📥 Download PDF Report</a>
+        </div>
+
+        <div class="glass-card">
+          <h3 style="font-size: 1.2rem; color: #FFFFFF; margin-bottom: 0.5rem;">🧹 Cleaned Dataset (.csv)</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6;">Export the transformed dataset with duplicates removed, missing values imputed, or outliers adjusted.</p>
+          <a href="/api/export/csv" download class="btn btn-secondary" style="width: 100%;">📥 Download Cleaned CSV</a>
+        </div>
+
+        <div class="glass-card">
+          <h3 style="font-size: 1.2rem; color: #FFFFFF; margin-bottom: 0.5rem;">🔐 Reproducibility JSON Checksum</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6;">Cryptographic SHA-256 dataset hash, model hyperparameters, and analysis configuration.</p>
+          <a href="/api/export/json" download class="btn btn-outline-orange" style="width: 100%;">📥 Download JSON Audit</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
