@@ -1,6 +1,6 @@
 /**
- * DataLens AI - Custom Vanilla JavaScript Controller
- * Floating Top Navbar Hubs • Sub-Nav Pills • Liquid Glass Orange Dark Theme
+ * DataLens AI - High-Performance Controller & UI Engine
+ * Floating Top Navbar Hubs • Interactive Ingestion Tabs • Deep Thinking Resume 10.0 Suite • Gemini Integration
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -20,10 +20,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const topDatasetName = document.getElementById("topDatasetName");
   const resetDataBtn = document.getElementById("resetDataBtn");
   const quickSampleBtn = document.getElementById("quickSampleBtn");
+  const heroSampleBtn = document.getElementById("heroSampleBtn");
+  const heroResumeBtn = document.getElementById("heroResumeBtn");
   const fileInput = document.getElementById("fileInput");
   const dropZone = document.getElementById("dropZone");
-  const apiKeyInput = document.getElementById("apiKeyInput");
-  const saveApiKeyBtn = document.getElementById("saveApiKeyBtn");
+
+  // Ingestion Tabs
+  const tabUploadFileBtn = document.getElementById("tabUploadFileBtn");
+  const tabPasteTextBtn = document.getElementById("tabPasteTextBtn");
+  const tabSampleDatasetsBtn = document.getElementById("tabSampleDatasetsBtn");
+  const ingestTabUpload = document.getElementById("ingestTabUpload");
+  const ingestTabPaste = document.getElementById("ingestTabPaste");
+  const ingestTabSamples = document.getElementById("ingestTabSamples");
+  const pasteResumeInput = document.getElementById("pasteResumeInput");
+  const analyzePastedResumeBtn = document.getElementById("analyzePastedResumeBtn");
+
+  // Gemini API Key Elements
+  const navApiKeyBtn = document.getElementById("navApiKeyBtn");
+  const apiKeyModal = document.getElementById("apiKeyModal");
+  const closeApiKeyModalBtn = document.getElementById("closeApiKeyModalBtn");
+  const cancelApiKeyModalBtn = document.getElementById("cancelApiKeyModalBtn");
+  const saveModalApiKeyBtn = document.getElementById("saveModalApiKeyBtn");
+  const modalApiKeyInput = document.getElementById("modalApiKeyInput");
+  const modalKeyFeedback = document.getElementById("modalKeyFeedback");
+  const navGeminiStatusIcon = document.getElementById("navGeminiStatusIcon");
+  const navGeminiStatusText = document.getElementById("navGeminiStatusText");
+  const homeGeminiStatusPill = document.getElementById("homeGeminiStatusPill");
 
   // Chart.js Global Dark Theme Defaults
   if (window.Chart) {
@@ -33,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================================================
-  // 1. Primary Hub Navigation & Mobile Toggle
+  // 1. Hub Navigation
   // =========================================================
   function switchHub(targetHubId) {
     hubButtons.forEach((btn) => {
@@ -52,10 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Close mobile drawer if open
-    navCenterHubs.classList.remove("mobile-open");
-
-    // Scroll to top
+    if (navCenterHubs) navCenterHubs.classList.remove("mobile-open");
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -66,42 +85,245 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  navBrandBtn.addEventListener("click", () => switchHub("hub-home"));
-
-  mobileNavToggle.addEventListener("click", () => {
-    navCenterHubs.classList.toggle("mobile-open");
-  });
+  if (navBrandBtn) navBrandBtn.addEventListener("click", () => switchHub("hub-home"));
+  if (mobileNavToggle) {
+    mobileNavToggle.addEventListener("click", () => {
+      navCenterHubs.classList.toggle("mobile-open");
+    });
+  }
 
   // =========================================================
-  // 2. Sub-Navigation Pills (Inside Each Hub)
+  // 2. Ingestion Hub Tabs
   // =========================================================
-  document.querySelectorAll(".subnav-pills-bar").forEach((bar) => {
-    bar.addEventListener("click", (e) => {
-      const pill = e.target.closest(".subnav-pill");
-      if (!pill) return;
+  function setIngestTab(tab) {
+    [tabUploadFileBtn, tabPasteTextBtn, tabSampleDatasetsBtn].forEach((btn) => {
+      if (btn) btn.className = "btn btn-sm btn-secondary";
+    });
+    [ingestTabUpload, ingestTabPaste, ingestTabSamples].forEach((sec) => {
+      if (sec) sec.style.display = "none";
+    });
 
-      const parentHub = bar.closest(".view-panel");
-      parentHub.querySelectorAll(".subnav-pill").forEach((p) => p.classList.remove("active"));
-      pill.classList.add("active");
+    if (tab === "upload") {
+      if (tabUploadFileBtn) tabUploadFileBtn.className = "btn btn-sm btn-outline-orange active";
+      if (ingestTabUpload) ingestTabUpload.style.display = "block";
+    } else if (tab === "paste") {
+      if (tabPasteTextBtn) tabPasteTextBtn.className = "btn btn-sm btn-outline-orange active";
+      if (ingestTabPaste) ingestTabPaste.style.display = "block";
+    } else if (tab === "samples") {
+      if (tabSampleDatasetsBtn) tabSampleDatasetsBtn.className = "btn btn-sm btn-outline-orange active";
+      if (ingestTabSamples) ingestTabSamples.style.display = "block";
+    }
+  }
 
-      const targetSubViewId = pill.getAttribute("data-subview");
-      parentHub.querySelectorAll(".subview-section").forEach((sec) => {
-        if (sec.id === targetSubViewId) {
-          sec.style.display = "block";
-        } else {
-          sec.style.display = "none";
+  if (tabUploadFileBtn) tabUploadFileBtn.addEventListener("click", () => setIngestTab("upload"));
+  if (tabPasteTextBtn) tabPasteTextBtn.addEventListener("click", () => setIngestTab("paste"));
+  if (tabSampleDatasetsBtn) tabSampleDatasetsBtn.addEventListener("click", () => setIngestTab("samples"));
+
+  // =========================================================
+  // 3. Gemini API Key Modal Management
+  // =========================================================
+  function openApiKeyModal() {
+    if (apiKeyModal) apiKeyModal.style.display = "flex";
+  }
+  function closeApiKeyModal() {
+    if (apiKeyModal) apiKeyModal.style.display = "none";
+  }
+
+  if (navApiKeyBtn) navApiKeyBtn.addEventListener("click", openApiKeyModal);
+  if (closeApiKeyModalBtn) closeApiKeyModalBtn.addEventListener("click", closeApiKeyModal);
+  if (cancelApiKeyModalBtn) cancelApiKeyModalBtn.addEventListener("click", closeApiKeyModal);
+
+  async function checkGeminiStatus() {
+    try {
+      const res = await fetch("/api/config/api-key-status");
+      const data = await res.json();
+      if (data.has_key) {
+        if (navGeminiStatusIcon) navGeminiStatusIcon.textContent = "⚡";
+        if (navGeminiStatusText) navGeminiStatusText.textContent = "Gemini Active";
+        if (homeGeminiStatusPill) homeGeminiStatusPill.innerHTML = "⚡ Gemini 3.7 / 2.5 Active";
+      } else {
+        if (navGeminiStatusIcon) navGeminiStatusIcon.textContent = "🔑";
+        if (navGeminiStatusText) navGeminiStatusText.textContent = "Connect Key";
+        if (homeGeminiStatusPill) homeGeminiStatusPill.innerHTML = "🔒 Offline Math Engine";
+      }
+    } catch (e) {
+      console.warn("Could not fetch Gemini status:", e);
+    }
+  }
+
+  if (saveModalApiKeyBtn) {
+    saveModalApiKeyBtn.addEventListener("click", async () => {
+      const key = modalApiKeyInput.value.trim();
+      if (!key) {
+        alert("Please enter a valid Gemini API key (starts with AIzaSy...).");
+        return;
+      }
+      saveModalApiKeyBtn.disabled = true;
+      saveModalApiKeyBtn.textContent = "Verifying...";
+      if (modalKeyFeedback) modalKeyFeedback.innerHTML = "<span style='color: var(--orange-bright);'>Testing connection with Gemini 2.5/3.7 Flash...</span>";
+
+      try {
+        const res = await fetch("/api/config/api-key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ api_key: key }),
+        });
+        const data = await res.json();
+        saveModalApiKeyBtn.disabled = false;
+        saveModalApiKeyBtn.textContent = "Connect Key";
+
+        if (res.ok) {
+          if (data.verified) {
+            checkGeminiStatus();
+            if (modalKeyFeedback) modalKeyFeedback.innerHTML = "<span style='color: #10B981;'>✓ Connected & Verified with Gemini!</span>";
+            setTimeout(closeApiKeyModal, 1200);
+          } else {
+            if (modalKeyFeedback) modalKeyFeedback.innerHTML = "<span style='color: var(--amber);'>Key saved! (Fallback mode active if quota exceeded).</span>";
+            setTimeout(closeApiKeyModal, 1500);
+          }
         }
-      });
-
-      // If RAG subview selected and empty, auto search
-      if (targetSubViewId === "sub-rag" && !document.getElementById("ragResultsContainer").hasChildNodes()) {
-        searchRAG("");
+      } catch (err) {
+        saveModalApiKeyBtn.disabled = false;
+        saveModalApiKeyBtn.textContent = "Connect Key";
+        if (modalKeyFeedback) modalKeyFeedback.innerHTML = "<span style='color: var(--rose);'>Failed to connect.</span>";
       }
     });
-  });
+  }
 
   // =========================================================
-  // 3. Dataset State Sync & Conditional Navbar Lock
+  // 4. Ingestion Triggers (Dropzone, Browse, Paste, Sample)
+  // =========================================================
+  if (fileInput) {
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        uploadFile(e.target.files[0]);
+      }
+    });
+  }
+
+  if (dropZone) {
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      if (e.dataTransfer.files.length > 0) {
+        uploadFile(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const prevDropZoneHtml = dropZone ? dropZone.innerHTML : "";
+    if (dropZone) {
+      dropZone.innerHTML = `
+        <div class="drop-icon" style="animation: spin 1s infinite linear;">⚙️</div>
+        <h4 style="color: #FFFFFF; font-size: 1.2rem;">Analyzing '${file.name}'...</h4>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.5rem;">Extracting structure, PII scan & running intelligence pipeline...</p>
+      `;
+    }
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchDatasetState(1);
+        if (data.is_resume) {
+          switchHub("hub-resume");
+        } else {
+          switchHub("hub-data");
+        }
+      } else {
+        alert(data.detail || "File processing failed.");
+        if (dropZone) dropZone.innerHTML = prevDropZoneHtml;
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Error uploading file.");
+      if (dropZone) dropZone.innerHTML = prevDropZoneHtml;
+    }
+  }
+
+  // Paste Resume Action
+  if (analyzePastedResumeBtn) {
+    analyzePastedResumeBtn.addEventListener("click", async () => {
+      const text = pasteResumeInput ? pasteResumeInput.value.trim() : "";
+      if (!text || text.length < 30) {
+        alert("Please paste more than 30 characters of resume or document content.");
+        return;
+      }
+      analyzePastedResumeBtn.disabled = true;
+      analyzePastedResumeBtn.textContent = "⚡ Analyzing Resume (Scoring 10.0)...";
+
+      try {
+        const res = await fetch("/api/resume/analyze-text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text }),
+        });
+        const data = await res.json();
+        analyzePastedResumeBtn.disabled = false;
+        analyzePastedResumeBtn.textContent = "💼 Analyze & Score Resume (10.0)";
+
+        if (res.ok) {
+          await fetchDatasetState(1);
+          switchHub("hub-resume");
+        } else {
+          alert(data.detail || "Analysis failed.");
+        }
+      } catch (err) {
+        console.error("Paste error:", err);
+        analyzePastedResumeBtn.disabled = false;
+        analyzePastedResumeBtn.textContent = "💼 Analyze & Score Resume (10.0)";
+      }
+    });
+  }
+
+  // Load Sample HR Data
+  async function loadSampleHRData() {
+    try {
+      const res = await fetch("/api/load-sample");
+      const data = await res.json();
+      if (res.ok) {
+        await fetchDatasetState(1);
+        switchHub("hub-data");
+      }
+    } catch (err) {
+      console.error("Sample HR load error:", err);
+    }
+  }
+
+  // Load Sample Resume Data
+  async function loadSampleResumeData() {
+    try {
+      const res = await fetch("/api/load-sample-resume");
+      const data = await res.json();
+      if (res.ok) {
+        await fetchDatasetState(1);
+        switchHub("hub-resume");
+      }
+    } catch (err) {
+      console.error("Sample resume load error:", err);
+    }
+  }
+
+  if (quickSampleBtn) quickSampleBtn.addEventListener("click", loadSampleHRData);
+  if (heroSampleBtn) heroSampleBtn.addEventListener("click", loadSampleHRData);
+  if (heroResumeBtn) heroResumeBtn.addEventListener("click", loadSampleResumeData);
+
+  // =========================================================
+  // 5. Dataset State Synchronization & UI Hydration
   // =========================================================
   async function fetchDatasetState(page = 1) {
     try {
@@ -109,18 +331,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       
       if (!data.has_dataset) {
-        // No dataset: lock and hide navbar hubs
-        navCenterHubs.classList.add("hidden-nav");
-        mobileNavToggle.style.display = "none";
-        topDatasetPill.style.display = "none";
-        resetDataBtn.style.display = "none";
+        if (navCenterHubs) navCenterHubs.classList.add("hidden-nav");
+        if (topDatasetPill) topDatasetPill.style.display = "none";
+        if (resetDataBtn) resetDataBtn.style.display = "none";
         switchHub("hub-home");
         return;
       }
 
-      // Dataset present: unlock navbar hubs
-      navCenterHubs.classList.remove("hidden-nav");
-      mobileNavToggle.style.display = "";
+      if (navCenterHubs) navCenterHubs.classList.remove("hidden-nav");
       appState.dataset = data;
       appState.currentPage = page;
       updateUI();
@@ -131,24 +349,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateUI() {
     const d = appState.dataset;
-    if (!d || !d.has_dataset) {
-      navCenterHubs.classList.add("hidden-nav");
-      mobileNavToggle.style.display = "none";
-      topDatasetPill.style.display = "none";
-      resetDataBtn.style.display = "none";
-      return;
+    if (!d || !d.has_dataset) return;
+
+    if (topDatasetPill) {
+      topDatasetPill.style.display = "inline-flex";
+      if (topDatasetName) topDatasetName.textContent = `${d.dataset_name} ${d.is_cleaned ? "(Cleaned)" : ""}`;
     }
+    if (resetDataBtn) resetDataBtn.style.display = d.is_cleaned ? "inline-flex" : "none";
 
-    // Unlock and show full navigation hubs
-    navCenterHubs.classList.remove("hidden-nav");
-    mobileNavToggle.style.display = "";
-
-    // 1. Top Bar Pill
-    topDatasetPill.style.display = "inline-flex";
-    topDatasetName.textContent = `${d.dataset_name} ${d.is_cleaned ? "(Cleaned)" : ""}`;
-    resetDataBtn.style.display = d.is_cleaned ? "inline-flex" : "none";
-
-    // 1.5 Handle Resume Analysis View
     const navResumeBtn = document.getElementById("navResumeBtn");
     if (d.is_resume && d.resume_analysis) {
       if (navResumeBtn) navResumeBtn.style.display = "inline-flex";
@@ -157,71 +365,35 @@ document.addEventListener("DOMContentLoaded", () => {
       if (navResumeBtn) navResumeBtn.style.display = "none";
     }
 
-    // 2. Privacy Scanner Box
-    const pBox = document.getElementById("privacyStatusBox");
-    if (d.privacy) {
-      const score = d.privacy.privacy_safety_score;
-      const color = score >= 80 ? "#10B981" : score >= 50 ? "#F59E0B" : "#EF4444";
-      pBox.innerHTML = `
-        <div style="font-weight: 700; color: ${color}; font-size: 1.15rem; margin-bottom: 0.4rem;">
-          🛡️ Privacy Safety Score: ${score}/100
-        </div>
-        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
-          Flagged Sensitive Columns: <b style="color: var(--text-pure);">${d.privacy.sensitive_columns_count}</b> &nbsp;|&nbsp; 
-          PII Matches Redacted: <b style="color: var(--text-pure);">${d.privacy.total_pii_occurrences}</b>
-        </p>
-      `;
+    // Update KPI cards in Data Explorer
+    const kpiRows = document.getElementById("kpiRows");
+    const kpiCols = document.getElementById("kpiCols");
+    const kpiMissing = document.getElementById("kpiMissing");
+    const kpiMemory = document.getElementById("kpiMemory");
+
+    if (kpiRows) kpiRows.textContent = d.total_rows.toLocaleString();
+    if (kpiCols) kpiCols.textContent = d.total_cols;
+    if (kpiMissing && d.profiler) kpiMissing.textContent = `${d.profiler.missing_cells_pct}%`;
+    if (kpiMemory && d.profiler) kpiMemory.textContent = d.profiler.memory_usage_mb ? `${d.profiler.memory_usage_mb} MB` : "< 1 MB";
+
+    // Column schema badges
+    const columnSchemaBadges = document.getElementById("columnSchemaBadges");
+    if (columnSchemaBadges && d.profiler && d.profiler.columns) {
+      columnSchemaBadges.innerHTML = d.profiler.columns.map((c) => `
+        <span class="badge ${getTypeBadgeClass(c.semantic_type)}" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
+          <strong>${c.column_name}</strong> &bull; ${c.semantic_type}
+        </span>
+      `).join("");
     }
 
-    // 3. Overview Metrics Grid
-    const mGrid = document.getElementById("overviewMetrics");
-    const health = d.quality ? d.quality.health_score : 100;
-    const hColor = health >= 80 ? "#10B981" : health >= 60 ? "#F59E0B" : "#EF4444";
+    // Render paginated data table
+    renderDataTable();
 
-    mGrid.innerHTML = `
-      <div class="glass-card kpi-card"><div class="kpi-label">Total Records</div><div class="kpi-val orange">${d.total_rows.toLocaleString()}</div></div>
-      <div class="glass-card kpi-card"><div class="kpi-label">Features</div><div class="kpi-val">${d.total_cols}</div></div>
-      <div class="glass-card kpi-card"><div class="kpi-label">Health Score</div><div class="kpi-val" style="color: ${hColor}">${health}/100</div></div>
-      <div class="glass-card kpi-card"><div class="kpi-label">Missing Cells</div><div class="kpi-val">${d.profiler ? d.profiler.total_missing_cells : 0}</div></div>
-      <div class="glass-card kpi-card"><div class="kpi-label">Duplicate Rows</div><div class="kpi-val">${d.quality ? d.quality.duplicate_rows : 0}</div></div>
-    `;
+    // Render Quality Hub
+    renderQualityHub();
 
-    // 4. Schema Table
-    const schemaTbody = document.querySelector("#schemaTable tbody");
-    schemaTbody.innerHTML = "";
-    if (d.profiler && d.profiler.columns) {
-      d.profiler.columns.forEach((c) => {
-        const tr = document.createElement("tr");
-        const typeBadgeClass = getTypeBadgeClass(c.semantic_type);
-        tr.innerHTML = `
-          <td><strong style="color: #FFFFFF;">${c.column_name}</strong></td>
-          <td><span class="badge ${typeBadgeClass}">${c.semantic_type}</span></td>
-          <td><code>${c.pandas_dtype}</code></td>
-          <td>${c.missing_count} (${c.missing_pct}%)</td>
-          <td>${c.unique_count}</td>
-          <td>${c.sample_values.slice(0, 3).join(", ")}</td>
-        `;
-        schemaTbody.appendChild(tr);
-      });
-    }
-
-    // 5. Raw Data Table Pagination
-    renderRawDataTable();
-
-    // 6. Quality Missing Values Chart
-    renderMissingValuesChart();
-
-    // 7. Stats Table
-    renderStatsTable();
-
-    // 8. Correlations Table
-    renderCorrelationsTable();
-
-    // 9. Outliers Table
-    renderOutliersTable();
-
-    // 10. Populate Dropdowns
-    populateColumnDropdowns();
+    // Populate ML Target Column Dropdown
+    populateMLDropdown();
   }
 
   function getTypeBadgeClass(type) {
@@ -235,686 +407,445 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function renderRawDataTable() {
-    const sample = appState.dataset.sample_data;
-    if (!sample) return;
-
-    const thead = document.getElementById("rawDataTableHead");
-    const tbody = document.getElementById("rawDataTableBody");
-    const pageIndicator = document.getElementById("pageIndicator");
-
-    thead.innerHTML = `<tr>${appState.dataset.columns.map((c) => `<th>${c}</th>`).join("")}</tr>`;
-    tbody.innerHTML = "";
-
-    sample.records.forEach((row) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = appState.dataset.columns.map((c) => `<td>${row[c] !== undefined ? row[c] : ""}</td>`).join("");
-      tbody.appendChild(tr);
-    });
-
-    pageIndicator.textContent = `Page ${sample.page} of ${sample.total_pages}`;
-  }
-
   // =========================================================
-  // 4. Chart Rendering
+  // 6. Resume Studio Sub-Tabs & Rendering
   // =========================================================
-  function renderMissingValuesChart() {
-    const d = appState.dataset;
-    if (!d || !d.quality) return;
+  const resumeTabAuditBtn = document.getElementById("resumeTabAuditBtn");
+  const resumeTabRewritesBtn = document.getElementById("resumeTabRewritesBtn");
+  const resumeTabTechBtn = document.getElementById("resumeTabTechBtn");
+  const resumeTabProfileBtn = document.getElementById("resumeTabProfileBtn");
 
-    const ctx = document.getElementById("missingValuesChart").getContext("2d");
-    if (appState.charts.missing) {
-      appState.charts.missing.destroy();
-    }
+  const resumeSubViewAudit = document.getElementById("resumeSubViewAudit");
+  const resumeSubViewRewrites = document.getElementById("resumeSubViewRewrites");
+  const resumeSubViewTech = document.getElementById("resumeSubViewTech");
+  const resumeSubViewProfile = document.getElementById("resumeSubViewProfile");
 
-    const missingDetails = d.quality.missing_details || [];
-    const labels = missingDetails.map((m) => m.column);
-    const data = missingDetails.map((m) => m.missing_count);
-
-    appState.charts.missing = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: labels.length ? labels : ["Zero Missing Values"],
-        datasets: [{
-          label: "Missing Count",
-          data: data.length ? data : [0],
-          backgroundColor: "#FF6B00",
-          borderRadius: 8,
-          borderColor: "#FF851B",
-          borderWidth: 1,
-        }],
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: "rgba(255, 255, 255, 0.05)" } },
-          x: { grid: { display: false } },
-        },
-      },
+  function setResumeSubTab(tab) {
+    [resumeTabAuditBtn, resumeTabRewritesBtn, resumeTabTechBtn, resumeTabProfileBtn].forEach((btn) => {
+      if (btn) btn.className = "btn btn-sm btn-secondary";
     });
-  }
-
-  function renderStatsTable() {
-    const d = appState.dataset;
-    if (!d || !d.statistics) return;
-
-    const tbody = document.querySelector("#statsTable tbody");
-    tbody.innerHTML = "";
-    const numStats = d.statistics.numerical || {};
-
-    Object.entries(numStats).forEach(([col, s]) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><strong style="color: #FFFFFF;">${col}</strong></td>
-        <td>${s.mean}</td>
-        <td>${s.median_50}</td>
-        <td>${s.std}</td>
-        <td>${s.min}</td>
-        <td>${s.q1_25}</td>
-        <td>${s.q3_75}</td>
-        <td>${s.max}</td>
-        <td>${s.skewness}</td>
-        <td><span class="badge ${Math.abs(s.skewness) > 1 ? 'badge-cat' : 'badge-bool'}">${s.skewness_label}</span></td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function renderCorrelationsTable() {
-    const d = appState.dataset;
-    if (!d || !d.statistics) return;
-
-    const tbody = document.querySelector("#correlationTable tbody");
-    tbody.innerHTML = "";
-    const corrs = (d.statistics.correlations && d.statistics.correlations.strong_correlations) || [];
-
-    if (!corrs.length) {
-      tbody.innerHTML = "<tr><td colspan='6' style='text-align: center; color: var(--text-muted);'>No strong pairwise correlations detected.</td></tr>";
-      return;
-    }
-
-    corrs.forEach((c) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><strong style="color: #FFFFFF;">${c.col1}</strong></td>
-        <td><strong style="color: #FFFFFF;">${c.col2}</strong></td>
-        <td><code style="color: var(--orange-bright);">${c.pearson}</code></td>
-        <td><code>${c.spearman}</code></td>
-        <td><span class="badge ${c.strength === 'Strong' ? 'badge-cat' : 'badge-id'}">${c.strength}</span></td>
-        <td>${c.direction}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function renderOutliersTable() {
-    const d = appState.dataset;
-    if (!d || !d.quality) return;
-
-    const tbody = document.querySelector("#outliersTable tbody");
-    tbody.innerHTML = "";
-    const outliers = d.quality.outliers || {};
-
-    let hasOutliers = false;
-    Object.entries(outliers).forEach(([col, info]) => {
-      const iqr = info.iqr;
-      if (iqr.outlier_count > 0) {
-        hasOutliers = true;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><strong style="color: #FFFFFF;">${col}</strong></td>
-          <td><span class="badge badge-cat">${iqr.outlier_count}</span></td>
-          <td>${iqr.outlier_pct}%</td>
-          <td>${iqr.lower_bound}</td>
-          <td>${iqr.upper_bound}</td>
-          <td>${iqr.outlier_values.slice(0, 4).join(", ")}</td>
-        `;
-        tbody.appendChild(tr);
-      }
+    [resumeSubViewAudit, resumeSubViewRewrites, resumeSubViewTech, resumeSubViewProfile].forEach((sec) => {
+      if (sec) sec.style.display = "none";
     });
 
-    if (!hasOutliers) {
-      tbody.innerHTML = "<tr><td colspan='6' style='text-align: center; color: #10B981;'>✅ Zero statistical outliers detected via IQR method.</td></tr>";
+    if (tab === "audit") {
+      if (resumeTabAuditBtn) resumeTabAuditBtn.className = "btn btn-sm btn-outline-orange active";
+      if (resumeSubViewAudit) resumeSubViewAudit.style.display = "block";
+    } else if (tab === "rewrites") {
+      if (resumeTabRewritesBtn) resumeTabRewritesBtn.className = "btn btn-sm btn-outline-orange active";
+      if (resumeSubViewRewrites) resumeSubViewRewrites.style.display = "block";
+    } else if (tab === "tech") {
+      if (resumeTabTechBtn) resumeTabTechBtn.className = "btn btn-sm btn-outline-orange active";
+      if (resumeSubViewTech) resumeSubViewTech.style.display = "block";
+    } else if (tab === "profile") {
+      if (resumeTabProfileBtn) resumeTabProfileBtn.className = "btn btn-sm btn-outline-orange active";
+      if (resumeSubViewProfile) resumeSubViewProfile.style.display = "block";
     }
   }
 
-  function populateColumnDropdowns() {
-    const d = appState.dataset;
-    if (!d || !d.columns) return;
+  if (resumeTabAuditBtn) resumeTabAuditBtn.addEventListener("click", () => setResumeSubTab("audit"));
+  if (resumeTabRewritesBtn) resumeTabRewritesBtn.addEventListener("click", () => setResumeSubTab("rewrites"));
+  if (resumeTabTechBtn) resumeTabTechBtn.addEventListener("click", () => setResumeSubTab("tech"));
+  if (resumeTabProfileBtn) resumeTabProfileBtn.addEventListener("click", () => setResumeSubTab("profile"));
 
-    const chartColSelect = document.getElementById("chartSelectCol");
-    const mlTargetSelect = document.getElementById("mlTargetCol");
+  function renderResumeAnalysis(ra) {
+    if (!ra) return;
 
-    chartColSelect.innerHTML = "";
-    mlTargetSelect.innerHTML = "";
-
-    d.columns.forEach((col) => {
-      const opt1 = document.createElement("option");
-      opt1.value = col;
-      opt1.textContent = col;
-      chartColSelect.appendChild(opt1);
-
-      if (!col.toLowerCase().endsWith("id")) {
-        const opt2 = document.createElement("option");
-        opt2.value = col;
-        opt2.textContent = col;
-        mlTargetSelect.appendChild(opt2);
-      }
-    });
-  }
-
-  // =========================================================
-  // 4b. Deep Thinking Resume & Career Intelligence Renderer
-  // =========================================================
-  function renderResumeAnalysis(analysis) {
-    if (!analysis) return;
-
-    // 1. Overall Score out of 10.0
-    const rawScore = analysis.score_out_of_10 !== undefined ? analysis.score_out_of_10 : ((analysis.market_score || 70) / 10.0).toFixed(1);
-    const scoreVal = Number(rawScore).toFixed(1);
-    const sColor = scoreVal >= 8.5 ? "#10B981" : scoreVal >= 7.0 ? "#FF851B" : "#EF4444";
-
+    const overallScore = ra.overall_score !== undefined ? Number(ra.overall_score).toFixed(1) : "8.5";
     const masterScoreEl = document.getElementById("resumeMasterScore");
-    if (masterScoreEl) {
-      masterScoreEl.textContent = scoreVal;
-      masterScoreEl.style.color = sColor;
-      masterScoreEl.style.textShadow = `0 0 32px ${sColor}88`;
-    }
+    if (masterScoreEl) masterScoreEl.textContent = overallScore;
 
-    const badgeEl = document.getElementById("resumePercentileBadge");
-    if (badgeEl) {
-      badgeEl.textContent = analysis.percentile_tier || "85th Percentile • Strong Market Contender";
-      badgeEl.style.color = sColor;
-      badgeEl.style.borderColor = `${sColor}44`;
-      badgeEl.style.background = `${sColor}14`;
-    }
+    const tierEl = document.getElementById("resumePercentileTier");
+    if (tierEl && ra.percentile_tier) tierEl.textContent = ra.percentile_tier;
 
-    const p = analysis.profile || {};
-    const docNameEl = document.getElementById("resumeDocName");
-    if (docNameEl) docNameEl.textContent = p.file_name || "Resume.pdf";
-
-    const bulletCountEl = document.getElementById("resumeBulletCount");
-    if (bulletCountEl) bulletCountEl.textContent = p.total_bullet_points || 0;
-
-    const quantRatioEl = document.getElementById("resumeQuantRatio");
-    if (quantRatioEl) {
-      const qPct = p.total_bullet_points ? Math.round((p.quantified_bullets_count / p.total_bullet_points) * 100) : 0;
-      quantRatioEl.textContent = `${qPct}%`;
-    }
-
-    // 2. Dimensional Sub-Scores Grid (Out of 10.0)
-    const rGrid = document.getElementById("resumeMetricsGrid");
-    const sub = analysis.sub_scores || {};
-    
-    const dimensions = [
-      { key: "impact", defaultScore: 7.5, label: "Business Impact & Metrics", icon: "📈", desc: "Numbers, $, %, scale metrics" },
-      { key: "verbs", defaultScore: 7.8, label: "Executive Power Verbs", icon: "⚡", desc: "Decisive action vs passive tone" },
-      { key: "skills", defaultScore: 8.2, label: "2026 Tech Stack Alignment", icon: "🧠", desc: "Modern AI, Cloud, Systems density" },
-      { key: "ats", defaultScore: 9.0, label: "ATS Architecture & Structure", icon: "🛡️", desc: "Machine readability & contact completeness" },
-      { key: "leadership", defaultScore: 7.0, label: "Seniority & Scope Signals", icon: "🎖️", desc: "Architecture, mentorship, ownership" },
-    ];
-
-    rGrid.innerHTML = dimensions.map((d) => {
-      const scoreObj = sub[d.key] || {};
-      const sc = (scoreObj.score !== undefined ? scoreObj.score : d.defaultScore).toFixed(1);
-      const scColor = sc >= 8.5 ? "#10B981" : sc >= 7.0 ? "#FF851B" : "#EF4444";
-      const progressWidth = Math.min(100, Math.max(10, Math.round((sc / 10.0) * 100)));
-
-      return `
-        <div class="glass-card kpi-card" style="text-align: left; padding: 1.25rem;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">${d.icon} ${d.label}</span>
-            <span style="font-size: 1.25rem; font-weight: 800; color: ${scColor};">${sc} <small style="font-size: 0.75rem; color: var(--text-dim);">/ 10</small></span>
-          </div>
-          <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; margin: 0.4rem 0;">
-            <div style="width: ${progressWidth}%; height: 100%; background: ${scColor}; border-radius: 3px; box-shadow: 0 0 10px ${scColor}88;"></div>
-          </div>
-          <div style="font-size: 0.75rem; color: var(--text-dim);">${d.desc}</div>
-        </div>
-      `;
-    }).join("");
-
-    // 3. Skills Match & Missing Radar
-    const sContainer = document.getElementById("resumeSkillsContainer");
-    if (sContainer) {
-      sContainer.innerHTML = "";
-      const matched = analysis.matched_skills || {};
-      const recommended = analysis.recommended_keywords || {};
-
-      Object.keys(matched).forEach((cat) => {
-        const foundList = matched[cat] || [];
-        const recList = recommended[cat] || [];
-        const catDiv = document.createElement("div");
-        catDiv.style.marginBottom = "1.25rem";
-        catDiv.innerHTML = `
-          <div style="font-size: 0.9rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.45rem;">${cat}</div>
-          <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
-            ${foundList.map((s) => `<span class="badge badge-bool">✓ ${s}</span>`).join("") || '<span style="font-size: 0.8rem; color: var(--text-dim);">No direct keywords detected</span>'}
-          </div>
-          ${recList.length ? `
-            <div style="font-size: 0.8rem; color: var(--orange-bright); margin-top: 0.25rem;">
-              Recommended 2026 Skills to Integrate: ${recList.map((s) => `<code style="color: var(--orange-bright); margin-right: 0.35rem; background: rgba(255,107,0,0.08); padding: 2px 6px; border-radius: 4px;">+ ${s}</code>`).join("")}
-            </div>
-          ` : ''}
-        `;
-        sContainer.appendChild(catDiv);
-      });
-    }
-
-    // 4. Candidate ATS Diagnostic
-    const pContainer = document.getElementById("resumeProfileContainer");
-    if (pContainer) {
-      pContainer.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.92rem;">
-          <div><b>📄 Uploaded File:</b> <span style="color: var(--text-pure);">${p.file_name || "Resume.pdf"}</span></div>
-          <div><b>📧 Email Address:</b> <span style="color: var(--text-orange);">${p.detected_email || "Not found"}</span></div>
-          <div><b>📱 Phone Number:</b> <span style="color: var(--text-muted);">${p.detected_phone || "Not found"}</span></div>
-          <div><b>🌐 LinkedIn Profile:</b> <span class="badge ${p.has_linkedin ? 'badge-bool' : 'badge-id'}">${p.has_linkedin ? '✓ Linked' : '✗ Missing link'}</span></div>
-          <div><b>💻 GitHub / Portfolio:</b> <span class="badge ${p.has_github ? 'badge-bool' : 'badge-id'}">${p.has_github ? '✓ Linked' : '✗ Missing link'}</span></div>
-          <div style="border-top: 1px solid var(--border-glass); padding-top: 0.85rem; margin-top: 0.25rem;">
-            <b>Total Bullet Statements Scanned:</b> <span style="color: var(--text-pure); font-weight: 700;">${p.total_bullet_points || 0}</span>
-          </div>
-          <div>
-            <b>Quantified Metric Bullets ($ / % / Scale):</b> <span style="color: #10B981; font-weight: 700;">${p.quantified_bullets_count || 0}</span>
-          </div>
-          <div>
-            <b>Executive Power Verbs:</b> <span style="color: var(--orange-bright); font-weight: 700;">${p.action_verb_count || 0}</span>
-          </div>
-          <div>
-            <b>Passive Phrasing Traps Found:</b> <span style="color: #EF4444; font-weight: 700;">${p.weak_phrase_count || 0} (${(p.weak_phrases_found || []).join(", ") || "None"})</span>
-          </div>
-        </div>
-      `;
-    }
-
-    // 5. Deep Thinking Executive Report
-    const sugBox = document.getElementById("resumeSuggestionsContent");
-    if (sugBox) {
-      const insights = analysis.deep_insights || analysis.suggestions || {};
-      if (insights.markdown) {
-        sugBox.innerHTML = marked.parse(insights.markdown);
-      } else {
-        sugBox.innerHTML = "<p style='color: var(--text-muted);'>Executive analysis report generating...</p>";
-      }
-    }
-  }
-
-  // =========================================================
-  // 5. File Ingestion & Sample Loading
-  // =========================================================
-  dropZone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dropZone.classList.add("dragover");
-  });
-
-  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
-
-  dropZone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    dropZone.classList.remove("dragover");
-    if (e.dataTransfer.files.length) {
-      uploadFile(e.dataTransfer.files[0]);
-    }
-  });
-
-  fileInput.addEventListener("change", (e) => {
-    if (e.target.files.length) {
-      uploadFile(e.target.files[0]);
-    }
-  });
-
-  async function uploadFile(file) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (res.ok) {
-        await fetchDatasetState(1);
-        if (data.is_resume) {
-          switchHub("hub-resume");
-        } else {
-          switchHub("hub-data");
-        }
-      } else {
-        alert(data.detail || "Failed to upload and parse file. Please verify file contains valid data.");
-      }
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Error uploading file. Check that the document contains readable text or tabular data.");
-    }
-  }
-
-  quickSampleBtn.addEventListener("click", async () => {
-    try {
-      const res = await fetch("/api/load-sample", { method: "POST" });
-      if (res.ok) {
-        await fetchDatasetState(1);
-        switchHub("hub-data");
-      }
-    } catch (err) {
-      console.error("Sample load error:", err);
-    }
-  });
-
-  const heroSampleBtn = document.getElementById("heroSampleBtn");
-  if (heroSampleBtn) {
-    heroSampleBtn.addEventListener("click", async () => {
-      try {
-        const res = await fetch("/api/load-sample", { method: "POST" });
-        if (res.ok) {
-          await fetchDatasetState(1);
-          switchHub("hub-data");
-        }
-      } catch (err) {
-        console.error("Sample load error:", err);
-      }
-    });
-  }
-
-  const heroResumeBtn = document.getElementById("heroResumeBtn");
-  if (heroResumeBtn) {
-    heroResumeBtn.addEventListener("click", async () => {
-      try {
-        const res = await fetch("/api/load-sample-resume", { method: "POST" });
-        if (res.ok) {
-          await fetchDatasetState(1);
-          switchHub("hub-resume");
-        }
-      } catch (err) {
-        console.error("Sample resume error:", err);
-      }
-    });
-  }
-
-  const analyzePastedResumeBtn = document.getElementById("analyzePastedResumeBtn");
-  const pastedResumeInput = document.getElementById("pastedResumeInput");
-  if (analyzePastedResumeBtn && pastedResumeInput) {
-    analyzePastedResumeBtn.addEventListener("click", async () => {
-      const text = pastedResumeInput.value.trim();
-      if (!text) {
-        alert("Please paste your resume text before clicking analyze.");
-        return;
-      }
-      analyzePastedResumeBtn.disabled = true;
-      analyzePastedResumeBtn.textContent = "Analyzing...";
-
-      try {
-        const res = await fetch("/api/resume/analyze-text", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
-        });
-        const data = await res.json();
-        analyzePastedResumeBtn.disabled = false;
-        analyzePastedResumeBtn.textContent = "⚡ Analyze Pasted Resume";
-
-        if (res.ok) {
-          await fetchDatasetState(1);
-          renderResumeAnalysis(data.analysis);
-        } else {
-          alert(data.detail || "Resume analysis failed.");
-        }
-      } catch (err) {
-        console.error("Paste analysis error:", err);
-        analyzePastedResumeBtn.disabled = false;
-        analyzePastedResumeBtn.textContent = "⚡ Analyze Pasted Resume";
-      }
-    });
-  }
-
-  resetDataBtn.addEventListener("click", async () => {
-    try {
-      const res = await fetch("/api/reset-data", { method: "POST" });
-      if (res.ok) {
-        await fetchDatasetState(1);
-      }
-    } catch (err) {
-      console.error("Reset error:", err);
-    }
-  });
-
-  // Pagination Handlers
-  document.getElementById("prevPageBtn").addEventListener("click", () => {
-    if (appState.currentPage > 1) {
-      fetchDatasetState(appState.currentPage - 1);
-    }
-  });
-
-  document.getElementById("nextPageBtn").addEventListener("click", () => {
-    const sample = appState.dataset.sample_data;
-    if (sample && appState.currentPage < sample.total_pages) {
-      fetchDatasetState(appState.currentPage + 1);
-    }
-  });
-
-  // =========================================================
-  // 6. Data Cleaning Pipeline
-  // =========================================================
-  document.getElementById("applyCleaningBtn").addEventListener("click", async () => {
-    const payload = {
-      drop_duplicates: document.getElementById("cleanDropDups").checked,
-      missing_strategy: document.getElementById("cleanMissingStrat").value,
-      outlier_strategy: document.getElementById("cleanOutlierStrat").value,
+    // Sub-Scores
+    const sub = ra.sub_scores || {};
+    const setSub = (id, barId, val) => {
+      const el = document.getElementById(id);
+      const bar = document.getElementById(barId);
+      const num = Number(val || 7.5);
+      if (el) el.textContent = `${num.toFixed(1)} / 10`;
+      if (bar) bar.style.width = `${Math.min(100, num * 10)}%`;
     };
 
-    try {
-      const res = await fetch("/api/clean", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Cleaned successfully! Removed ${data.log.removed_duplicates} dups, handled ${data.log.missing_handled} missing cols, adjusted ${data.log.outliers_adjusted} outliers.`);
-        await fetchDatasetState(1);
-      }
-    } catch (err) {
-      console.error("Cleaning error:", err);
+    setSub("subScoreImpact", "barImpact", sub.impact);
+    setSub("subScoreVerbs", "barVerbs", sub.verbs);
+    setSub("subScoreSkills", "barSkills", sub.skills);
+    setSub("subScoreAts", "barAts", sub.ats);
+    setSub("subScoreLeadership", "barLeadership", sub.leadership);
+
+    // Markdown Deep Insights
+    const auditEl = document.getElementById("resumeAuditMarkdown");
+    if (auditEl && ra.deep_insights && ra.deep_insights.markdown) {
+      auditEl.innerHTML = marked.parse(ra.deep_insights.markdown);
     }
-  });
+
+    // Google XYZ Rewrites
+    const rewritesContainer = document.getElementById("resumeRewritesList");
+    if (rewritesContainer && ra.weak_bullet_rewrites) {
+      rewritesContainer.innerHTML = ra.weak_bullet_rewrites.map((r, i) => `
+        <div class="glass-card" style="border: 1px solid var(--border-glass-orange); padding: 1.25rem;">
+          <div style="font-size: 0.8rem; color: var(--rose); font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem;">Original Statement #${i + 1}</div>
+          <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 0.5rem; text-decoration: line-through;">"${r.original}"</div>
+          
+          <div style="font-size: 0.8rem; color: var(--emerald); font-weight: 700; text-transform: uppercase; margin-bottom: 0.25rem;">Elite Google XYZ Formula Rewrite</div>
+          <div style="font-size: 1rem; color: #FFFFFF; font-weight: 600; line-height: 1.5; margin-bottom: 0.5rem; background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--emerald); padding: 0.5rem 0.75rem; border-radius: 4px;">
+            ${r.rewrite}
+          </div>
+          
+          <div style="font-size: 0.8rem; color: var(--text-dim);">
+            <strong>Weakness:</strong> ${r.weakness} &bull; <strong style="color: var(--orange-bright);">Advantage:</strong> ${r.advantage}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // Skills Badges
+    const matchedEl = document.getElementById("resumeMatchedSkillsBadges");
+    if (matchedEl && ra.matched_skills) {
+      matchedEl.innerHTML = Object.entries(ra.matched_skills).flatMap(([cat, skills]) => 
+        skills.map(s => `<span class="badge badge-bool" style="padding: 0.4rem 0.6rem;">${s}</span>`)
+      ).join("") || "<span style='color: var(--text-muted);'>No skills detected</span>";
+    }
+
+    const missingEl = document.getElementById("resumeMissingSkillsBadges");
+    if (missingEl && ra.recommended_keywords) {
+      missingEl.innerHTML = ra.recommended_keywords.map(k => `
+        <span class="badge" style="background: rgba(255, 107, 0, 0.2); color: var(--orange-bright); border: 1px solid var(--border-glass-orange); cursor: pointer; padding: 0.4rem 0.6rem;" onclick="navigator.clipboard.writeText('${k}'); alert('Copied keyword: ${k}');">
+          + ${k}
+        </span>
+      `).join("") || "<span style='color: var(--text-muted);'>Profile is comprehensive</span>";
+    }
+
+    // ATS Profile
+    const prof = ra.profile || {};
+    const atsName = document.getElementById("atsName");
+    const atsEmail = document.getElementById("atsEmail");
+    const atsPhone = document.getElementById("atsPhone");
+    const atsLinks = document.getElementById("atsLinks");
+
+    if (atsName) atsName.textContent = prof.name || "Candidate";
+    if (atsEmail) atsEmail.textContent = prof.email || "Not Detected";
+    if (atsPhone) atsPhone.textContent = prof.phone || "Not Detected";
+    if (atsLinks) {
+      const links = [];
+      if (prof.linkedin) links.push(`<a href="${prof.linkedin}" target="_blank" style="color: var(--orange-bright);">LinkedIn</a>`);
+      if (prof.github) links.push(`<a href="${prof.github}" target="_blank" style="color: var(--emerald);">GitHub</a>`);
+      atsLinks.innerHTML = links.join(" &bull; ") || "None Detected";
+    }
+
+    const sectionsEl = document.getElementById("atsSectionsList");
+    if (sectionsEl && prof.detected_sections) {
+      sectionsEl.innerHTML = prof.detected_sections.map(s => `<span class="badge badge-id" style="padding: 0.35rem 0.65rem;">${s}</span>`).join("");
+    }
+  }
 
   // =========================================================
-  // 7. Custom Chart Builder
+  // 7. Paginated Data Table
   // =========================================================
-  document.getElementById("renderChartBtn").addEventListener("click", () => {
-    const col = document.getElementById("chartSelectCol").value;
-    const type = document.getElementById("chartSelectType").value;
+  function renderDataTable() {
     const d = appState.dataset;
-    if (!d || !col) return;
+    const container = document.getElementById("dataTableContainer");
+    if (!container || !d) return;
 
-    const ctx = document.getElementById("customChartCanvas").getContext("2d");
-    if (appState.charts.custom) {
-      appState.charts.custom.destroy();
+    if (d.records && d.records.length > 0) {
+      const cols = d.columns || Object.keys(d.records[0]);
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr>
+          </thead>
+          <tbody>
+            ${d.records.map(row => `
+              <tr>${cols.map(c => `<td>${row[c] !== undefined ? row[c] : ""}</td>`).join("")}</tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    } else {
+      container.innerHTML = "<p style='color: var(--text-muted); padding: 1.5rem; text-align: center;'>No records available.</p>";
     }
 
-    document.getElementById("customChartTitle").textContent = `${type.toUpperCase()} Chart: ${col}`;
+    const pageIndicator = document.getElementById("pageIndicator");
+    if (pageIndicator) pageIndicator.textContent = `Page ${appState.currentPage}`;
+  }
 
-    const records = d.sample_data ? d.sample_data.records : [];
-    const counts = {};
-    records.forEach((r) => {
-      const v = r[col];
-      if (v !== undefined && v !== "") {
-        counts[v] = (counts[v] || 0) + 1;
+  const prevPageBtn = document.getElementById("prevPageBtn");
+  const nextPageBtn = document.getElementById("nextPageBtn");
+
+  if (prevPageBtn) {
+    prevPageBtn.addEventListener("click", () => {
+      if (appState.currentPage > 1) {
+        fetchDatasetState(appState.currentPage - 1);
       }
     });
+  }
 
-    const labels = Object.keys(counts).slice(0, 15);
-    const values = Object.values(counts).slice(0, 15);
-
-    appState.charts.custom = new Chart(ctx, {
-      type: type === "line" ? "line" : "bar",
-      data: {
-        labels: labels,
-        datasets: [{
-          label: col,
-          data: values,
-          backgroundColor: "rgba(255, 107, 0, 0.75)",
-          borderColor: "#FF851B",
-          borderWidth: 1.5,
-          fill: type === "line",
-          borderRadius: 6,
-        }],
-      },
-      options: {
-        responsive: true,
-        scales: {
-          y: { beginAtZero: true, grid: { color: "rgba(255, 255, 255, 0.06)" } },
-          x: { grid: { display: false } },
-        },
-      },
+  if (nextPageBtn) {
+    nextPageBtn.addEventListener("click", () => {
+      fetchDatasetState(appState.currentPage + 1);
     });
-  });
+  }
 
   // =========================================================
-  // 8. ML Studio
+  // 8. Quality & Cleaning Hub
   // =========================================================
-  document.getElementById("trainMlBtn").addEventListener("click", async () => {
-    const targetCol = document.getElementById("mlTargetCol").value;
-    const modelName = document.getElementById("mlModelName").value;
-    const btn = document.getElementById("trainMlBtn");
+  function renderQualityHub() {
+    const d = appState.dataset;
+    if (!d || !d.quality) return;
 
-    btn.disabled = true;
-    btn.textContent = "Training Model...";
+    const q = d.quality;
+    const healthEl = document.getElementById("qualityHealthScore");
+    const summaryEl = document.getElementById("qualityHealthSummary");
 
-    try {
-      const res = await fetch("/api/ml/train", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target_column: targetCol, model_name: modelName }),
-      });
-      const data = await res.json();
-      btn.disabled = false;
-      btn.textContent = "🚀 Train & Evaluate Model";
+    if (healthEl) {
+      healthEl.textContent = `${q.health_score} / 100`;
+      healthEl.style.color = q.health_score >= 80 ? "var(--emerald)" : q.health_score >= 60 ? "var(--amber)" : "var(--rose)";
+    }
 
-      if (res.ok) {
-        const result = data.result;
-        document.getElementById("mlResultsContainer").style.display = "block";
+    if (summaryEl) {
+      summaryEl.textContent = `Duplicates: ${q.duplicate_rows} (${q.duplicate_pct}%) • Missing Cells: ${q.total_missing_cells} • Outlier Columns: ${Object.keys(q.outliers || {}).length}`;
+    }
 
-        // Render Metrics
-        const grid = document.getElementById("mlMetricsGrid");
-        grid.innerHTML = Object.entries(result.metrics).map(([k, v]) => `
-          <div class="glass-card kpi-card">
-            <div class="kpi-label">${k}</div>
-            <div class="kpi-val orange">${v}</div>
+    const outliersContainer = document.getElementById("outliersListContainer");
+    if (outliersContainer && q.outliers) {
+      const outlierEntries = Object.entries(q.outliers).filter(([_, o]) => o.iqr && o.iqr.outlier_count > 0);
+      if (outlierEntries.length > 0) {
+        outliersContainer.innerHTML = outlierEntries.map(([col, o]) => `
+          <div style="margin-bottom: 0.75rem; padding: 0.6rem; background: rgba(0,0,0,0.3); border-radius: var(--radius-sm);">
+            <strong style="color: #FFFFFF;">${col}</strong>: <span style="color: var(--rose); font-weight: 700;">${o.iqr.outlier_count} Outliers</span>
+            <div style="font-size: 0.78rem; color: var(--text-dim);">Bounds: [${o.iqr.lower_bound}, ${o.iqr.upper_bound}]</div>
           </div>
         `).join("");
+      } else {
+        outliersContainer.innerHTML = "<p style='color: var(--emerald); font-size: 0.9rem;'>✓ Zero statistical outliers detected via IQR method.</p>";
+      }
+    }
 
-        // Render Importance Chart
-        if (result.feature_importance && result.feature_importance.length) {
-          const ctx = document.getElementById("mlImportanceChart").getContext("2d");
-          if (appState.charts.importance) appState.charts.importance.destroy();
+    const missingContainer = document.getElementById("missingListContainer");
+    if (missingContainer && q.missing_details) {
+      if (q.missing_details.length > 0) {
+        missingContainer.innerHTML = q.missing_details.map(m => `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="color: #FFFFFF;">${m.column}</span>
+            <span class="badge badge-num">${m.missing_count} (${m.missing_pct}%)</span>
+          </div>
+        `).join("");
+      } else {
+        missingContainer.innerHTML = "<p style='color: var(--emerald); font-size: 0.9rem;'>✓ 100% complete dataset with 0 missing cells.</p>";
+      }
+    }
+  }
 
-          const labels = result.feature_importance.map((f) => f.Feature);
-          const vals = result.feature_importance.map((f) => f.Importance);
+  const runAutoCleanBtn = document.getElementById("runAutoCleanBtn");
+  const restoreRawDataBtn = document.getElementById("restoreRawDataBtn");
 
-          appState.charts.importance = new Chart(ctx, {
-            type: "bar",
-            data: {
-              labels: labels,
-              datasets: [{
-                label: "Importance",
-                data: vals,
-                backgroundColor: "rgba(255, 107, 0, 0.8)",
-                borderColor: "#FF851B",
-                borderRadius: 6,
-              }],
-            },
-            options: {
-              indexAxis: "y",
-              responsive: true,
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { grid: { color: "rgba(255,255,255,0.06)" } },
-                y: { grid: { display: false } },
-              },
-            },
-          });
+  if (runAutoCleanBtn) {
+    runAutoCleanBtn.addEventListener("click", async () => {
+      runAutoCleanBtn.disabled = true;
+      runAutoCleanBtn.textContent = "🧼 Cleaning Dataset...";
+      try {
+        const res = await fetch("/api/clean/auto", { method: "POST" });
+        const data = await res.json();
+        runAutoCleanBtn.disabled = false;
+        runAutoCleanBtn.textContent = "🧼 Run Full Auto-Clean";
+        if (res.ok) {
+          await fetchDatasetState(1);
+          alert("✓ Dataset cleaned successfully! Duplicates dropped and missing values imputed.");
         }
-      } else {
-        alert(data.detail || "ML Training failed.");
+      } catch (e) {
+        runAutoCleanBtn.disabled = false;
+        runAutoCleanBtn.textContent = "🧼 Run Full Auto-Clean";
       }
-    } catch (err) {
-      console.error("ML Error:", err);
-      btn.disabled = false;
-      btn.textContent = "🚀 Train & Evaluate Model";
-    }
-  });
+    });
+  }
+
+  if (restoreRawDataBtn) {
+    restoreRawDataBtn.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/clean/reset", { method: "POST" });
+        if (res.ok) {
+          await fetchDatasetState(1);
+          alert("Restored to original raw dataset.");
+        }
+      } catch (e) {}
+    });
+  }
+  if (resetDataBtn) {
+    resetDataBtn.addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/clean/reset", { method: "POST" });
+        if (res.ok) {
+          await fetchDatasetState(1);
+        }
+      } catch (e) {}
+    });
+  }
 
   // =========================================================
-  // 9. AI Insights Briefing
+  // 9. AutoML Studio
   // =========================================================
-  document.getElementById("refreshBriefingBtn").addEventListener("click", async () => {
-    const box = document.getElementById("briefingContentBox");
-    box.innerHTML = "<p style='color: var(--orange-bright);'>⚡ Compiling multi-agent executive briefing...</p>";
+  function populateMLDropdown() {
+    const d = appState.dataset;
+    const select = document.getElementById("mlTargetSelect");
+    if (!select || !d || !d.columns) return;
 
-    try {
-      const res = await fetch("/api/ai/briefing");
-      const data = await res.json();
-      if (res.ok) {
-        box.innerHTML = marked.parse(data.briefing);
-      } else {
-        box.innerHTML = `<p style='color: var(--rose);'>${data.detail || "Failed to generate briefing."}</p>`;
+    select.innerHTML = '<option value="">-- Select Target Column --</option>';
+    d.columns.forEach(col => {
+      const opt = document.createElement("option");
+      opt.value = col;
+      opt.textContent = col;
+      select.appendChild(opt);
+    });
+  }
+
+  const trainModelBtn = document.getElementById("trainModelBtn");
+  if (trainModelBtn) {
+    trainModelBtn.addEventListener("click", async () => {
+      const select = document.getElementById("mlTargetSelect");
+      const targetCol = select ? select.value : "";
+      if (!targetCol) {
+        alert("Please select a target column to predict.");
+        return;
       }
-    } catch (err) {
-      console.error("Briefing error:", err);
-      box.innerHTML = "<p style='color: var(--rose);'>Error generating AI briefing.</p>";
-    }
-  });
+
+      trainModelBtn.disabled = true;
+      trainModelBtn.textContent = "🧠 Training ML Model...";
+
+      try {
+        const res = await fetch("/api/ml/train", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target_column: targetCol }),
+        });
+        const data = await res.json();
+        trainModelBtn.disabled = false;
+        trainModelBtn.textContent = "🚀 Train & Evaluate Model";
+
+        if (res.ok) {
+          const result = data.result;
+          const container = document.getElementById("mlResultsContainer");
+          if (container) container.style.display = "block";
+
+          const metricsGrid = document.getElementById("mlMetricsGrid");
+          if (metricsGrid && result.metrics) {
+            metricsGrid.innerHTML = Object.entries(result.metrics).map(([k, v]) => `
+              <div class="glass-card kpi-card">
+                <div class="kpi-label">${k}</div>
+                <div class="kpi-val orange">${v}</div>
+              </div>
+            `).join("");
+          }
+
+          // Feature Importance Chart
+          if (result.feature_importance && result.feature_importance.length) {
+            const chartCanvas = document.getElementById("mlImportanceChart");
+            if (chartCanvas) {
+              const ctx = chartCanvas.getContext("2d");
+              if (appState.charts.importance) appState.charts.importance.destroy();
+
+              appState.charts.importance = new Chart(ctx, {
+                type: "bar",
+                data: {
+                  labels: result.feature_importance.map(f => f.Feature),
+                  datasets: [{
+                    label: "Predictive Weight",
+                    data: result.feature_importance.map(f => f.Importance),
+                    backgroundColor: "rgba(255, 107, 0, 0.85)",
+                    borderColor: "#FF851B",
+                    borderRadius: 6,
+                  }],
+                },
+                options: {
+                  indexAxis: "y",
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    x: { grid: { color: "rgba(255,255,255,0.06)" } },
+                    y: { grid: { display: false } },
+                  },
+                },
+              });
+            }
+          }
+        } else {
+          alert(data.detail || "Model training failed.");
+        }
+      } catch (e) {
+        trainModelBtn.disabled = false;
+        trainModelBtn.textContent = "🚀 Train & Evaluate Model";
+      }
+    });
+  }
 
   // =========================================================
-  // 10. AI Data Analyst Chatbot
+  // 10. AI Analyst Chat & Strategic Briefing
   // =========================================================
+  const refreshBriefingBtn = document.getElementById("refreshBriefingBtn");
+  if (refreshBriefingBtn) {
+    refreshBriefingBtn.addEventListener("click", async () => {
+      const box = document.getElementById("briefingContentBox");
+      if (box) box.innerHTML = "<p style='color: var(--orange-bright);'>⚡ Compiling multi-agent executive briefing...</p>";
+      try {
+        const res = await fetch("/api/ai/briefing");
+        const data = await res.json();
+        if (res.ok && box) {
+          box.innerHTML = marked.parse(data.briefing);
+        }
+      } catch (e) {}
+    });
+  }
+
   const chatForm = document.getElementById("chatForm");
   const chatInput = document.getElementById("chatInput");
   const chatMessages = document.getElementById("chatMessages");
 
-  chatForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const query = chatInput.value.trim();
-    if (!query) return;
+  if (chatForm) {
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const query = chatInput.value.trim();
+      if (!query) return;
 
-    appendChatBubble("user", query);
-    chatInput.value = "";
+      appendChatBubble("user", query);
+      chatInput.value = "";
+      const thinkingBubble = appendChatBubble("assistant", "Thinking...");
 
-    const thinkingBubble = appendChatBubble("assistant", "Thinking...");
+      try {
+        const res = await fetch("/api/ai/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: query }),
+        });
+        const data = await res.json();
+        thinkingBubble.remove();
 
-    try {
-      const res = await fetch("/api/ai/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query }),
-      });
-      const data = await res.json();
-      thinkingBubble.remove();
-
-      if (res.ok) {
-        let content = marked.parse(data.answer);
-        if (data.data && Array.isArray(data.data) && data.data.length) {
-          const keys = Object.keys(data.data[0]);
-          const tableHtml = `
-            <div class="table-glass-container" style="margin-top: 0.75rem;">
-              <table>
-                <thead><tr>${keys.map((k) => `<th>${k}</th>`).join("")}</tr></thead>
-                <tbody>${data.data.slice(0, 5).map((row) => `<tr>${keys.map((k) => `<td>${row[k]}</td>`).join("")}</tr>`).join("")}</tbody>
-              </table>
-            </div>
-          `;
-          content += tableHtml;
+        if (res.ok) {
+          let content = marked.parse(data.answer);
+          if (data.data && Array.isArray(data.data) && data.data.length) {
+            const keys = Object.keys(data.data[0]);
+            content += `
+              <div class="table-glass-container" style="margin-top: 0.75rem;">
+                <table>
+                  <thead><tr>${keys.map(k => `<th>${k}</th>`).join("")}</tr></thead>
+                  <tbody>${data.data.slice(0, 5).map(row => `<tr>${keys.map(k => `<td>${row[k]}</td>`).join("")}</tr>`).join("")}</tbody>
+                </table>
+              </div>
+            `;
+          }
+          appendChatBubble("assistant", content, true);
+        } else {
+          appendChatBubble("assistant", `<span style='color: var(--rose);'>${data.detail || "Query failed."}</span>`, true);
         }
-        appendChatBubble("assistant", content, true);
-      } else {
-        appendChatBubble("assistant", `<span style='color: var(--rose);'>${data.detail || "Query failed."}</span>`, true);
+      } catch (err) {
+        thinkingBubble.remove();
+        appendChatBubble("assistant", "<span style='color: var(--rose);'>Error communicating with AI Analyst.</span>", true);
       }
-    } catch (err) {
-      thinkingBubble.remove();
-      appendChatBubble("assistant", "<span style='color: var(--rose);'>Error communicating with AI Analyst.</span>", true);
-    }
-  });
+    });
+  }
 
   function appendChatBubble(role, htmlContent, isHtml = false) {
+    if (!chatMessages) return null;
     const bubble = document.createElement("div");
     bubble.className = `chat-bubble ${role}`;
     if (isHtml) {
@@ -927,120 +858,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return bubble;
   }
 
-  // =========================================================
-  // 11. RAG Knowledge Search
-  // =========================================================
-  const ragInput = document.getElementById("ragSearchInput");
-  ragInput.addEventListener("input", debounce(() => searchRAG(ragInput.value), 300));
-
-  async function searchRAG(query) {
-    try {
-      const res = await fetch(`/api/rag/search?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      const container = document.getElementById("ragResultsContainer");
-      container.innerHTML = "";
-
-      if (data.results && data.results.length) {
-        data.results.forEach((d) => {
-          const card = document.createElement("div");
-          card.className = "glass-card";
-          card.innerHTML = `
-            <h3 style="font-size: 1.15rem; color: var(--orange-bright); margin-bottom: 0.5rem;">📖 ${d.title}</h3>
-            <p style="font-size: 0.93rem; line-height: 1.6; color: var(--text-main);">${d.content}</p>
-            <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-dim);">
-              Keywords: <code style="color: var(--orange-bright);">${d.keywords.join(", ")}</code>
-            </div>
-          `;
-          container.appendChild(card);
-        });
-      } else {
-        container.innerHTML = "<p style='color: var(--text-muted);'>No matching concepts found.</p>";
-      }
-    } catch (err) {
-      console.error("RAG search error:", err);
-    }
-  }
-
-  // =========================================================
-  // 12. Google Gemini Connection Status & Setup
-  // =========================================================
-  const geminiBadge = document.getElementById("geminiStatusBadge");
-  const geminiNotice = document.getElementById("geminiFeaturesNotice");
-
-  async function checkApiKeyStatus() {
-    try {
-      const res = await fetch("/api/config/api-key-status");
-      const data = await res.json();
-      if (data.has_key && geminiBadge) {
-        geminiBadge.className = "badge badge-bool";
-        geminiBadge.textContent = "⚡ Gemini 2.5 Active";
-        if (geminiNotice) {
-          geminiNotice.innerHTML = "<span style='color: #10B981;'>✓ Connected to Gemini 2.5 Flash. Vision OCR, Deep Thinking Resume Engine, and AI Analyst are fully activated.</span>";
-        }
-      }
-    } catch (e) {
-      console.warn("Could not check Gemini key status:", e);
-    }
-  }
-
-  saveApiKeyBtn.addEventListener("click", async () => {
-    const key = apiKeyInput.value.trim();
-    if (!key) {
-      alert("Please enter a valid Gemini API key (starts with AIzaSy...).");
-      return;
-    }
-
-    saveApiKeyBtn.disabled = true;
-    saveApiKeyBtn.textContent = "Verifying...";
-
-    try {
-      const res = await fetch("/api/config/api-key", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ api_key: key }),
-      });
-      const data = await res.json();
-      saveApiKeyBtn.disabled = false;
-      saveApiKeyBtn.textContent = "Connect";
-
-      if (res.ok) {
-        if (data.verified) {
-          if (geminiBadge) {
-            geminiBadge.className = "badge badge-bool";
-            geminiBadge.textContent = "⚡ Gemini 2.5 Active";
-          }
-          if (geminiNotice) {
-            geminiNotice.innerHTML = "<span style='color: #10B981;'>✓ Verified! Gemini 2.5 Flash Vision OCR, Deep Thinking Career Suite, and AI Analyst are active.</span>";
-          }
-          alert("🎉 Google Gemini API key connected and verified successfully!");
-        } else {
-          alert("Key saved! (Note: Running in offline deterministic fallback if quota or verification fails).");
-        }
-      } else {
-        alert(data.detail || "Failed to update API key.");
-      }
-    } catch (err) {
-      console.error("Key save error:", err);
-      saveApiKeyBtn.disabled = false;
-      saveApiKeyBtn.textContent = "Connect";
-    }
-  });
-
-  // Utility: Debounce
-  function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
-
-  // Initial Data & API Key Status Fetch
-  checkApiKeyStatus();
+  // Initial Sync
+  checkGeminiStatus();
   fetchDatasetState(1);
 });
-
