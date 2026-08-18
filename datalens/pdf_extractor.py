@@ -230,25 +230,83 @@ class PDFExtractor:
 
     @staticmethod
     def _gemini_multimodal_ocr(file_path: str, api_key: str) -> Optional[str]:
-        """Performs multimodal vision OCR on scanned PDFs using Gemini API."""
+        """Performs multimodal vision OCR on scanned PDFs and images using Gemini 2.5 / 3.7 Flash."""
+        api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            return None
+
         try:
             from google import genai
             from google.genai import types
             
             client = genai.Client(api_key=api_key)
+            models_to_try = [os.getenv("MODEL_NAME", "gemini-2.5-flash"), "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
+            models_to_try = list(dict.fromkeys(models_to_try))
+
             with open(file_path, "rb") as f:
                 pdf_bytes = f.read()
 
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[
-                    types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
-                    "Extract and transcribe the exact, complete full-text content of this document verbatim. Preserve all bullet points, section titles, contact information, and formatting. Do not summarize."
-                ]
+            prompt_text = (
+                "You are an expert OCR and Document Vision Analyst. "
+                "Transcribe and extract the entire, complete text of this document verbatim. "
+                "Preserve all headers, numbers, tables, marks, grades, bullet points, and contact information. "
+                "If this is a marksheet, transcript, or table, output the tabular rows using markdown table syntax (| col1 | col2 |). "
+                "Do not summarize."
             )
-            if response and response.text:
-                logger.info(f"Gemini Multimodal OCR successfully transcribed '{os.path.basename(file_path)}'.")
-                return response.text.strip()
+
+            # Strategy 1: Direct PDF byte stream part
+            for m in models_to_try:
+                try:
+                    response = client.models.generate_content(
+                        model=m,
+                        contents=[
+                            types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
+                            prompt_text
+                        ]
+                    )
+                    if response and response.text and len(response.text.strip()) > 10:
+                        logger.info(f"Gemini Vision OCR ({m}) transcribed '{os.path.basename(file_path)}'.")
+                        return response.text.strip()
+                except Exception as e1:
+                    logger.warning(f"Gemini PDF bytes OCR ({m}) attempt: {e1}")
+                    continue
+
+            # Strategy 2: High-Res Rendered Page Image OCR (via pypdfium2)
+            try:
+                import pypdfium2
+                import io
+                pdf_doc = pypdfium2.PdfDocument(file_path)
+                page_texts = []
+                for page_idx, page in enumerate(pdf_doc):
+                    pil_img = page.render(scale=2.0).to_pil()
+                    img_byte_arr = io.BytesIO()
+                    pil_img.save(img_byte_arr, format='JPEG', quality=90)
+                    img_bytes = img_byte_arr.getvalue()
+
+                    for m in models_to_try:
+                        try:
+                            resp = client.models.generate_content(
+                                model=m,
+                                contents=[
+                                    types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
+                                    f"Transcribe page {page_idx+1} verbatim. Extract all text, numbers, and tables."
+                                ]
+                            )
+                            if resp and resp.text:
+                                page_texts.append(resp.text.strip())
+                                break
+                        except Exception:
+                            continue
+
+                if page_texts:
+                    full_rendered_text = "\n\n".join(page_texts).strip()
+                    if full_rendered_text:
+                        logger.info(f"pypdfium2 + Gemini Vision OCR successfully transcribed '{os.path.basename(file_path)}'.")
+                        return full_rendered_text
+            except Exception as e2:
+                logger.warning(f"Rendered image OCR fallback error: {e2}")
+
         except Exception as ge:
-            logger.warning(f"Gemini Multimodal OCR failed: {ge}")
+            logger.warning(f"Gemini Multimodal OCR initialization failed: {ge}")
+
         return None

@@ -94,7 +94,7 @@ def run_cli_pipeline(file_path: str):
     print(insights)
 
     print(format_header("ANALYSIS COMPLETE"))
-    print("💡 To explore interactive charts, ML Studio, and the web UI, run:\n   streamlit run app.py\n")
+    print("💡 To explore interactive charts, ML Studio, and the web UI, run:\n   python server.py\n")
 
 
 if __name__ == "__main__":
