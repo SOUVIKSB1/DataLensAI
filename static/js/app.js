@@ -85,6 +85,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // In-Page Interactive Tool Action Buttons
+  const actionBtnClean = document.getElementById("actionBtnClean");
+  const actionBtnAi = document.getElementById("actionBtnAi");
+  const actionBtnMl = document.getElementById("actionBtnMl");
+  const actionBtnExport = document.getElementById("actionBtnExport");
+
+  if (actionBtnClean) actionBtnClean.addEventListener("click", () => switchHub("hub-quality"));
+  if (actionBtnAi) actionBtnAi.addEventListener("click", () => switchHub("hub-ai"));
+  if (actionBtnMl) actionBtnMl.addEventListener("click", () => switchHub("hub-ml"));
+  if (actionBtnExport) actionBtnExport.addEventListener("click", () => switchHub("hub-export"));
+
   if (navBrandBtn) navBrandBtn.addEventListener("click", () => switchHub("hub-home"));
   if (mobileNavToggle) {
     mobileNavToggle.addEventListener("click", () => {
