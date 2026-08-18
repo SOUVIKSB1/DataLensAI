@@ -190,6 +190,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  const navUploadNewBtn = document.getElementById("navUploadNewBtn");
+  if (navUploadNewBtn && fileInput) {
+    navUploadNewBtn.addEventListener("click", () => fileInput.click());
+  }
+
+  const initialDropZoneHtml = dropZone ? dropZone.innerHTML : "";
+
   // =========================================================
   // 4. Ingestion Triggers (Dropzone, Browse, Paste, Sample)
   // =========================================================
@@ -222,7 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const prevDropZoneHtml = dropZone ? dropZone.innerHTML : "";
     if (dropZone) {
       dropZone.innerHTML = `
         <div class="drop-icon" style="animation: spin 1s infinite linear;">⚙️</div>
@@ -237,6 +243,11 @@ document.addEventListener("DOMContentLoaded", () => {
         body: formData,
       });
       const data = await res.json();
+      
+      // Reset input and dropzone so user never needs to reload
+      if (fileInput) fileInput.value = "";
+      if (dropZone) dropZone.innerHTML = initialDropZoneHtml;
+
       if (res.ok) {
         await fetchDatasetState(1);
         if (data.is_resume) {
@@ -246,12 +257,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       } else {
         alert(data.detail || "File processing failed.");
-        if (dropZone) dropZone.innerHTML = prevDropZoneHtml;
       }
     } catch (err) {
       console.error("Upload error:", err);
+      if (fileInput) fileInput.value = "";
+      if (dropZone) dropZone.innerHTML = initialDropZoneHtml;
       alert("Error uploading file.");
-      if (dropZone) dropZone.innerHTML = prevDropZoneHtml;
     }
   }
 

@@ -107,14 +107,19 @@ class ResumeEngine:
         text_lower = text.lower()
         has_email = bool(re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text))
         has_phone = bool(re.search(r"(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}", text))
-        matches = sum(1 for kw in RESUME_KEYWORDS if kw in text_lower)
+        # Strict keyword count
+        matches = sum(1 for kw in RESUME_KEYWORDS if re.search(r"\b" + re.escape(kw) + r"\b", text_lower))
 
-        if has_email or has_phone:
-            if matches >= 1:
-                return True
-        if matches >= 2:
+        # Check for multiple classic resume sections
+        section_headers = ["experience", "education", "skills", "projects", "summary", "employment", "certifications", "work history", "objective"]
+        section_matches = sum(1 for sec in section_headers if re.search(r"\b" + re.escape(sec) + r"\b", text_lower))
+
+        # 1. Definite Resume: Section headers + contact information
+        if (has_email or has_phone) and section_matches >= 2 and matches >= 3:
             return True
-        if any(line.strip().startswith(("-", "•", "*", "–", "—")) for line in text.split("\n")[:30]):
+
+        # 2. Strong section header presence
+        if section_matches >= 4 and matches >= 4:
             return True
 
         return False

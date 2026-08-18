@@ -91,16 +91,18 @@ def _update_session_pipeline(df: pd.DataFrame, dataset_name: str, is_cleaned: bo
 
     active_key = SESSION.get("api_key") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
-    # 5. Check if it's a Resume and run Resume Engine
+    # 5. Check if it's strictly a Resume and run Resume Engine
     if raw_text:
-        try:
-            engine = ResumeEngine(raw_text, file_name=dataset_name, api_key=active_key)
-            SESSION["resume_analysis"] = engine.analyze()
-        except Exception as e:
-            app_logger.warning(f"Resume analysis error: {e}")
+        from datalens.resume_engine import ResumeEngine
+        if ResumeEngine.is_resume(raw_text, file_name=dataset_name):
+            try:
+                engine = ResumeEngine(raw_text, file_name=dataset_name, api_key=active_key)
+                SESSION["resume_analysis"] = engine.analyze()
+            except Exception as e:
+                app_logger.warning(f"Resume analysis error: {e}")
+                SESSION["resume_analysis"] = None
+        else:
             SESSION["resume_analysis"] = None
-    elif SESSION.get("resume_analysis") is not None:
-        pass
     else:
         SESSION["resume_analysis"] = None
 

@@ -234,10 +234,11 @@ def _load_pdf(file_path: str) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     from datalens.pdf_extractor import PDFExtractor
     from datalens.resume_engine import ResumeEngine
 
-    full_text, all_tables = PDFExtractor.extract_full_text(file_path)
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    full_text, all_tables = PDFExtractor.extract_full_text(file_path, api_key=api_key)
 
-    # Case A: Check if it's a Resume / CV (prioritize over generic layout tables)
-    if ResumeEngine.is_resume(full_text, file_name=file_path) or (not all_tables and full_text):
+    # Case A: Check if it's strictly a Resume / CV
+    if ResumeEngine.is_resume(full_text, file_name=file_path):
         lines = [line.strip() for line in full_text.split("\n") if line.strip()]
         if lines:
             df = pd.DataFrame({
@@ -253,13 +254,20 @@ def _load_pdf(file_path: str) -> Tuple[pd.DataFrame, Dict[str, Any]]:
                 "extracted_rows": len(df),
             }
 
-    # Case B: Found structured tabular dataset in PDF
+    # Case B: Found structured tabular dataset in PDF (e.g. Marksheet, financial tables)
     if all_tables:
         top_table = all_tables[0]
         if len(top_table) > 1:
             headers = top_table[0]
+            # Ensure unique header names
+            clean_headers = []
+            for i, h in enumerate(headers):
+                h_str = str(h).strip() if h else f"Column_{i+1}"
+                if h_str in clean_headers:
+                    h_str = f"{h_str}_{i+1}"
+                clean_headers.append(h_str)
             rows = top_table[1:]
-            df = pd.DataFrame(rows, columns=headers)
+            df = pd.DataFrame(rows, columns=clean_headers)
             return df, {
                 "format": "pdf",
                 "is_resume": False,
@@ -275,11 +283,14 @@ def _load_pdf(file_path: str) -> Tuple[pd.DataFrame, Dict[str, Any]]:
             "Please configure your Gemini API key for automatic vision OCR or upload a machine-readable document."
         )
 
-    # Case D: General text document -> structured paragraph table
+    # Case D: General text document (e.g. report, transcript, essay) -> structured analysis table
     paragraphs = [p.strip() for p in full_text.split("\n\n") if p.strip()]
+    if not paragraphs:
+        paragraphs = [p.strip() for p in full_text.split("\n") if p.strip()]
     df = pd.DataFrame({
-        "Paragraph_ID": list(range(1, len(paragraphs) + 1)),
-        "Text_Segment": paragraphs,
+        "Section_ID": list(range(1, len(paragraphs) + 1)),
+        "Document_Text": paragraphs,
+        "Character_Count": [len(p) for p in paragraphs],
         "Word_Count": [len(p.split()) for p in paragraphs],
     })
     return df, {

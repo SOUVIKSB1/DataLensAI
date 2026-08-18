@@ -39,18 +39,23 @@
 
       <!-- Right Actions -->
       <div class="nav-right-group">
-        <div class="dataset-pill" id="topDatasetPill" style="display: none;">
+        <div class="dataset-pill" id="topDatasetPill" style="display: none;" title="Active Dataset">
           <span class="status-dot"></span>
           <span id="topDatasetName">No dataset</span>
         </div>
         
+        <!-- Persistent Ingest File Button (Never need to reload!) -->
+        <button id="navUploadNewBtn" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.8rem; font-size: 0.82rem;">
+          📁 Ingest File
+        </button>
+
         <!-- Gemini Key Status Pill / Switcher -->
         <button id="navApiKeyBtn" class="btn btn-outline-orange btn-sm" title="Google Gemini Status & Key Config" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
           <span id="navGeminiStatusIcon">⚡</span> <span id="navGeminiStatusText">Gemini AI</span>
         </button>
 
         <button id="resetDataBtn" class="btn btn-secondary btn-sm" style="display: none;">↺ Raw</button>
-        <button id="quickSampleBtn" class="btn btn-primary btn-sm">📊 Sample Data</button>
+        <button id="quickSampleBtn" class="btn btn-secondary btn-sm" style="font-size: 0.82rem;">📊 Sample</button>
         <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle navigation">☰</button>
       </div>
 

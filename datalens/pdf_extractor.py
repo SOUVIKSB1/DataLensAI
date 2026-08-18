@@ -32,6 +32,7 @@ class PDFExtractor:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"PDF file not found: {file_path}")
 
+        api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         extracted_pages_text: List[str] = []
         all_tables: List[List[List[str]]] = []
 
@@ -91,7 +92,7 @@ class PDFExtractor:
         # 6. Clean and normalize extracted text
         full_text = PDFExtractor._clean_text(full_text)
 
-        # 7. Strategy E: Gemini Multimodal Document OCR (for scanned images or un-OCR'd PDFs)
+        # 7. Strategy E: Gemini Multimodal Document OCR (for scanned images, photos or un-OCR'd PDFs)
         if (not full_text or len(full_text.split()) < 15) and api_key:
             gemini_ocr_text = PDFExtractor._gemini_multimodal_ocr(file_path, api_key)
             if gemini_ocr_text:

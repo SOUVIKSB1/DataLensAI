@@ -174,16 +174,64 @@ RULE: Every critical metric claim MUST include a bracketed evidence tag `[Eviden
 
     def answer_query(self, user_query: str) -> Dict[str, Any]:
         """
-        Answers user questions using deterministic calculation tools + RAG knowledge retrieval.
+        Answers user questions using deterministic calculation tools + Gemini reasoning + RAG knowledge retrieval.
         """
         app_logger.info(f"Processing query: '{user_query}'")
         q = user_query.strip().lower()
 
-        # 1. RAG search for conceptual/domain queries
+        # 0. Conversational Greetings Handler
+        if q in ["hi", "hello", "hey", "hola", "greetings", "good morning", "good afternoon", "good evening", "who are you", "what can you do"]:
+            rows = self.profiler.get("total_rows", len(self.raw_df))
+            cols = self.profiler.get("total_cols", len(self.raw_df.columns))
+            return {
+                "answer": f"Hello! 👋 I am your **DataLens AI Executive Analyst**.\n\nI am actively analyzing your dataset with **{rows:,} rows** and **{cols} features**.\n\nHere are practical questions you can ask me right now:\n- 📈 *'What are the strongest correlations in this data?'*\n- 💰 *'What is the highest and lowest salary by department?'*\n- 🚨 *'Show outliers in Experience or Performance'* \n- 🧼 *'Summarize data hygiene and missingness risks'*\n- 🧠 *'Train an ML model on Salary or Attrition'*",
+                "data": None,
+            }
+
+        # 1. Deterministic Correlation Queries
+        if "correlation" in q or "relationship" in q or "correlated" in q:
+            strong_corrs = self.stats.get("correlations", {}).get("strong_correlations", [])
+            if strong_corrs:
+                corr_rows = []
+                for c in strong_corrs:
+                    corr_rows.append({
+                        "Feature 1": c["col1"],
+                        "Feature 2": c["col2"],
+                        "Pearson (r)": c["pearson"],
+                        "Strength": f"{c['strength'].capitalize()} {c['direction']}"
+                    })
+                top_c = strong_corrs[0]
+                return {
+                    "answer": f"The strongest linear correlation is between **`{top_c['col1']}`** and **`{top_c['col2']}`** with a Pearson **$r = {top_c['pearson']}$** ({top_c['strength']} {top_c['direction']}).\n\n`[Evidence: Pearson Correlation Matrix calculation]`",
+                    "data": corr_rows,
+                }
+            else:
+                return {
+                    "answer": "No strong linear correlations ($|r| \\ge 0.5$) were detected between numerical columns in this dataset.\n\n`[Evidence: Full pairwise correlation matrix evaluated]`",
+                    "data": None,
+                }
+
+        # 2. Priority: Gemini Grounded Reasoning with Full Dataset Context
+        grounded_ctx = self._build_grounded_context()
         rag_docs = RAGEngine.search(user_query)
         rag_context = "\n".join([f"• **{d['title']}**: {d['content']}" for d in rag_docs]) if rag_docs else ""
 
-        # 2. Highest / Lowest / Average group queries
+        prompt = f"""You are DataLens AI, a principal data scientist and executive analyst.
+Dataset Context:
+{grounded_ctx}
+
+Relevant Knowledge Base Articles:
+{rag_context}
+
+User question: {user_query}
+
+Provide a direct, comprehensive, and grounded answer in Markdown. Cite specific column names, numbers, or correlation coefficients from the dataset facts."""
+
+        res_text = self._call_gemini(prompt)
+        if res_text:
+            return {"answer": res_text, "data": None}
+
+        # 3. Deterministic Aggregation Fallback (Highest / Lowest / Average group queries)
         agg_match = re.search(r"(highest|maximum|max|lowest|minimum|min|average|avg|mean)\s+([\w_]+)(?:\s+(?:by|in|for|per)\s+([\w_]+))?", q)
         if agg_match:
             op, target_term, group_term = agg_match.groups()
@@ -198,7 +246,7 @@ RULE: Every critical metric claim MUST include a bracketed evidence tag `[Eviden
                         top_val = res.iloc[0][target_col]
                         return {
                             "answer": f"The `{group_col}` with the highest `{target_col}` is **{top_grp}** with a value of **{top_val:,.2f}**.\n\n`[Evidence: Group Maximum calculation]`",
-                            "data": res,
+                            "data": res.to_dict(orient="records"),
                         }
                     elif op in ["lowest", "minimum", "min"]:
                         res = self.raw_df.groupby(group_col)[target_col].min().reset_index().sort_values(by=target_col, ascending=True)
@@ -206,7 +254,7 @@ RULE: Every critical metric claim MUST include a bracketed evidence tag `[Eviden
                         low_val = res.iloc[0][target_col]
                         return {
                             "answer": f"The `{group_col}` with the lowest `{target_col}` is **{low_grp}** with a value of **{low_val:,.2f}**.\n\n`[Evidence: Group Minimum calculation]`",
-                            "data": res,
+                            "data": res.to_dict(orient="records"),
                         }
                     else:  # Average
                         res = self.raw_df.groupby(group_col)[target_col].mean().round(2).reset_index().sort_values(by=target_col, ascending=False)
@@ -214,7 +262,7 @@ RULE: Every critical metric claim MUST include a bracketed evidence tag `[Eviden
                         top_val = res.iloc[0][target_col]
                         return {
                             "answer": f"The average `{target_col}` across `{group_col}` is highest in **{top_grp}** at **{top_val:,.2f}**.\n\n`[Evidence: Group Mean calculation]`",
-                            "data": res,
+                            "data": res.to_dict(orient="records"),
                         }
                 else:
                     if op in ["highest", "maximum", "max"]:
@@ -227,7 +275,7 @@ RULE: Every critical metric claim MUST include a bracketed evidence tag `[Eviden
                         val = self.raw_df[target_col].mean()
                         return {"answer": f"The overall average (mean) of `{target_col}` is **{val:,.2f}**.\n\n`[Evidence: Mean={val:,.2f}]`", "data": None}
 
-        # 3. Missing values query
+        # 4. Missing values query
         if "missing" in q or "null" in q or "na" in q:
             missing_data = self.raw_df.isna().sum().reset_index()
             missing_data.columns = ["Column", "Missing Count"]
@@ -237,13 +285,8 @@ RULE: Every critical metric claim MUST include a bracketed evidence tag `[Eviden
             else:
                 return {
                     "answer": f"Detected missing values in **{len(missing_data)} column(s)**:\n\n`[Evidence: Total Missing Cells = {self.quality.get('total_missing_cells')}]`",
-                    "data": missing_data,
+                    "data": missing_data.to_dict(orient="records"),
                 }
-
-        # 4. Duplicate rows query
-        if "duplicate" in q or "repeat" in q:
-            dups = self.quality.get("duplicate_rows", 0)
-            return {"answer": f"The dataset contains **{dups} duplicate row(s)** ({self.quality.get('duplicate_pct')}%).\n\n`[Evidence: Exact row duplication check]`", "data": None}
 
         # 5. Outliers / Anomalies query
         if "outlier" in q or "anomaly" in q or "extreme" in q:
@@ -261,38 +304,22 @@ RULE: Every critical metric claim MUST include a bracketed evidence tag `[Eviden
             if outlier_rows:
                 return {
                     "answer": f"Detected IQR outliers in **{len(outlier_rows)} column(s)**:\n\n`[Evidence: Interquartile Range method]`",
-                    "data": pd.DataFrame(outlier_rows),
+                    "data": outlier_rows,
                 }
             else:
                 return {"answer": "No statistical outliers detected via IQR method.\n\n`[Evidence: Zero values outside [Q1-1.5IQR, Q3+1.5IQR]]`", "data": None}
 
-        # 6. Fallback to Gemini with RAG domain context
-        if self.client:
-            grounded_ctx = self._build_grounded_context()
-            prompt = f"""You are DataLens AI Data Analyst.
-Dataset Context:
-{grounded_ctx}
-
-Relevant Knowledge Base Articles:
-{rag_context}
-
-User question: {user_query}
-
-Provide a concise, grounded answer. Ensure any claims are backed by data facts or domain knowledge."""
-            res_text = self._call_gemini(prompt)
-            if res_text:
-                return {"answer": res_text, "data": None}
-
-        # If RAG found an article for conceptual query
-        if rag_docs:
-            top_d = rag_docs[0]
-            return {
-                "answer": f"### 📚 Knowledge Base: {top_d['title']}\n\n{top_d['content']}\n\n*Retrieved via DataLens RAG Engine.*",
-                "data": None,
-            }
+        # 6. Conceptual definitions (only if explicitly asking "what is", "explain")
+        if any(term in q for term in ["what is", "explain", "definition of", "how does"]):
+            if rag_docs:
+                top_d = rag_docs[0]
+                return {
+                    "answer": f"### 📚 Knowledge Base: {top_d['title']}\n\n{top_d['content']}\n\n*Retrieved via DataLens RAG Engine.*",
+                    "data": None,
+                }
 
         return {
-            "answer": f"I parsed your question regarding **'{user_query}'**. Try asking questions like:\n- *'What is the average Salary by Department?'*\n- *'Show outliers in Experience_Years'*\n- *'What does Pearson correlation mean?'*\n- *'Check for duplicate rows'*\n- *'Highest Performance_Score by City'*",
+            "answer": f"I parsed your question: **'{user_query}'**.\n\nHere are specific questions you can ask me:\n- *'What is the average Salary by Department?'*\n- *'Show outliers in Experience'* \n- *'What are the strongest correlations?'*\n- *'Check for duplicate rows'*\n- *'Highest Performance_Score by Department'*",
             "data": None,
         }
 
