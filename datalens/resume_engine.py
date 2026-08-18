@@ -169,15 +169,64 @@ class ResumeEngine:
         skills_score = min(10.0, round(max(4.0, (total_found / 14.0) * 10.0), 1))
 
         # 4. Dimension: ATS Structure & Architecture (0 - 10.0)
-        email_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", self.raw_text)
-        phone_match = re.search(r"(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}", self.raw_text)
-        github_match = "github.com" in text_lower
-        linkedin_match = "linkedin.com" in text_lower
+        # Robust ATS Entity Extraction
+        email_match = re.search(r"[\w\.-]+@[\w\.-]+\.[a-zA-Z]{2,}", self.raw_text)
+        detected_email = email_match.group(0) if email_match else "Not Detected"
+
+        phone_match = re.search(
+            r"(?:(?:\+|0{0,2})91[\s.-]?)?[6789]\d{9}|(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,5}[-.\s]?\d{3,5}",
+            self.raw_text
+        )
+        detected_phone = phone_match.group(0).strip() if phone_match else "Not Detected"
+
+        linkedin_match = re.search(r"(?:https?://)?(?:www\.)?linkedin\.com/in/[\w-]+", self.raw_text, re.IGNORECASE)
+        linkedin_url = linkedin_match.group(0) if linkedin_match else ("https://linkedin.com" if "linkedin.com" in text_lower else None)
+
+        github_match = re.search(r"(?:https?://)?(?:www\.)?github\.com/[\w-]+", self.raw_text, re.IGNORECASE)
+        github_url = github_match.group(0) if github_match else ("https://github.com" if "github.com" in text_lower else None)
+
+        # Candidate Name Extraction
+        candidate_name = None
+        for l in lines[:5]:
+            l_clean = l.strip()
+            # If line has 2-4 words, starts with capital, and is not a common header
+            if 2 <= len(l_clean.split()) <= 4 and re.match(r"^[A-Z][a-zA-Z\s.-]+$", l_clean):
+                if not any(hdr in l_clean.lower() for hdr in ["resume", "curriculum", "vitae", "contact", "email", "profile", "page", "phone"]):
+                    candidate_name = l_clean
+                    break
+        
+        if not candidate_name and self.file_name:
+            fn_base = os.path.splitext(os.path.basename(self.file_name))[0]
+            clean_fn = re.sub(r"[_\-\.]+", " ", fn_base).strip()
+            clean_fn = re.sub(r"(?i)\b(resume|cv|biodata|final|latest|updated|profile)\b", "", clean_fn).strip()
+            if clean_fn and len(clean_fn.split()) >= 1:
+                candidate_name = clean_fn.title()
+
+        if not candidate_name:
+            candidate_name = "Candidate"
+
+        # Detect Sections
+        detected_sections = []
+        sec_catalog = {
+            "Professional Summary": ["summary", "objective", "profile", "about me", "professional summary"],
+            "Work Experience": ["experience", "employment", "work history", "professional experience", "career"],
+            "Technical Skills": ["skills", "technical skills", "tech stack", "technologies", "competencies", "tools"],
+            "Education": ["education", "academic", "qualifications", "university", "college", "degree"],
+            "Projects": ["projects", "personal projects", "academic projects", "key initiatives"],
+            "Certifications": ["certifications", "certificates", "licenses", "courses", "credentials"],
+            "Leadership & Honors": ["leadership", "awards", "honors", "achievements", "activities"]
+        }
+        for sec_name, keywords in sec_catalog.items():
+            if any(re.search(r"\b" + re.escape(kw) + r"\b", text_lower) for kw in keywords):
+                detected_sections.append(sec_name)
+
+        if not detected_sections:
+            detected_sections = ["Professional Summary", "Experience", "Skills", "Education"]
 
         ats_score = 6.0
-        if email_match: ats_score += 1.0
-        if phone_match: ats_score += 1.0
-        if linkedin_match or github_match: ats_score += 1.0
+        if detected_email != "Not Detected": ats_score += 1.0
+        if detected_phone != "Not Detected": ats_score += 1.0
+        if linkedin_url or github_url: ats_score += 1.0
         if len(bullet_points) >= 6: ats_score += 1.0
         ats_score = min(10.0, round(ats_score, 1))
 
@@ -213,10 +262,16 @@ class ResumeEngine:
 
         profile = {
             "file_name": self.file_name,
-            "detected_email": email_match.group(0) if email_match else "Not detected",
-            "detected_phone": phone_match.group(0) if phone_match else "Not detected",
-            "has_linkedin": linkedin_match,
-            "has_github": github_match,
+            "name": candidate_name,
+            "email": detected_email,
+            "phone": detected_phone,
+            "linkedin": linkedin_url,
+            "github": github_url,
+            "detected_sections": detected_sections,
+            "detected_email": detected_email,
+            "detected_phone": detected_phone,
+            "has_linkedin": bool(linkedin_url),
+            "has_github": bool(github_url),
             "total_lines": len(lines),
             "total_bullet_points": len(bullet_points),
             "quantified_bullets_count": len(quantified_bullets),

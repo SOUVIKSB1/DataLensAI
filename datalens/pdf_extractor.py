@@ -51,36 +51,44 @@ class PDFExtractor:
                     except Exception as te:
                         logger.warning(f"Table extraction skipped on page {page_idx+1}: {te}")
 
-                    # 2. Strategy A: Spatial Word Clustering (best for multi-column and Canva resumes)
-                    page_text = PDFExtractor._extract_spatial_words(page)
+                    # 2. Extract page text using multiple strategies, picking highest-yield text
+                    candidates = []
 
-                    # 3. Strategy B: Standard layout extract fallback if spatial produced minimal text
-                    if not page_text or len(page_text.split()) < 5:
-                        try:
-                            raw_t = page.extract_text(layout=False, x_tolerance=2, y_tolerance=3)
-                            if raw_t and raw_t.strip():
-                                page_text = raw_t.strip()
-                        except Exception:
-                            pass
+                    # Strategy A: Standard layout extract (default)
+                    try:
+                        t1 = page.extract_text(layout=True)
+                        if t1 and t1.strip():
+                            candidates.append(t1.strip())
+                    except Exception:
+                        pass
 
-                    # 4. Strategy C: Layout=True fallback
-                    if not page_text or len(page_text.split()) < 5:
-                        try:
-                            raw_lt = page.extract_text(layout=True)
-                            if raw_lt and raw_lt.strip():
-                                page_text = raw_lt.strip()
-                        except Exception:
-                            pass
+                    # Strategy B: Non-layout extract
+                    try:
+                        t2 = page.extract_text(layout=False, x_tolerance=2, y_tolerance=3)
+                        if t2 and t2.strip():
+                            candidates.append(t2.strip())
+                    except Exception:
+                        pass
 
-                    if page_text:
-                        extracted_pages_text.append(page_text)
+                    # Strategy C: Spatial Word Clustering (for columns & sidebars)
+                    try:
+                        t3 = PDFExtractor._extract_spatial_words(page)
+                        if t3 and t3.strip():
+                            candidates.append(t3.strip())
+                    except Exception:
+                        pass
+
+                    if candidates:
+                        # Pick candidate with highest word count
+                        best_candidate = max(candidates, key=lambda c: len(c.split()))
+                        extracted_pages_text.append(best_candidate)
 
         except Exception as pe:
             logger.warning(f"pdfplumber encounter error on {file_path}: {pe}")
 
-        # 5. Strategy D: PDFMiner High-Level Stream Fallback
+        # 3. Strategy D: PDFMiner High-Level Stream Fallback
         full_text = "\n\n".join(extracted_pages_text).strip()
-        if not full_text or len(full_text.split()) < 10:
+        if not full_text or len(full_text.split()) < 15:
             try:
                 laparams = LAParams(line_margin=0.5, word_margin=0.2, char_margin=2.0)
                 miner_text = pdfminer_extract_text(file_path, laparams=laparams)
@@ -89,13 +97,13 @@ class PDFExtractor:
             except Exception as me:
                 logger.warning(f"pdfminer fallback failed: {me}")
 
-        # 6. Clean and normalize extracted text
+        # 4. Clean and normalize extracted text
         full_text = PDFExtractor._clean_text(full_text)
 
-        # 7. Strategy E: Gemini Multimodal Document OCR (for scanned images, photos or un-OCR'd PDFs)
+        # 5. Strategy E: Gemini Multimodal Document OCR (for scanned images, photos or un-OCR'd PDFs)
         if (not full_text or len(full_text.split()) < 15) and api_key:
             gemini_ocr_text = PDFExtractor._gemini_multimodal_ocr(file_path, api_key)
-            if gemini_ocr_text:
+            if gemini_ocr_text and len(gemini_ocr_text.split()) > len(full_text.split()):
                 full_text = gemini_ocr_text
 
         return full_text, all_tables
@@ -238,9 +246,10 @@ class PDFExtractor:
         try:
             from google import genai
             from google.genai import types
+            import gc
             
             client = genai.Client(api_key=api_key)
-            models_to_try = [os.getenv("MODEL_NAME", "gemini-2.0-flash"), "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest", "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
+            models_to_try = [os.getenv("MODEL_NAME", "gemini-2.0-flash"), "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest", "gemini-2.5-flash", "gemini-3.7-flash"]
             models_to_try = list(dict.fromkeys(models_to_try))
 
             with open(file_path, "rb") as f:
@@ -249,7 +258,7 @@ class PDFExtractor:
             prompt_text = (
                 "You are an expert OCR and Document Vision Analyst. "
                 "Transcribe and extract the entire, complete text of this document verbatim. "
-                "Preserve all headers, numbers, tables, marks, grades, bullet points, and contact information. "
+                "Preserve all headers, names, emails, phones, numbers, tables, marks, grades, bullet points, and contact information. "
                 "If this is a marksheet, transcript, or table, output the tabular rows using markdown table syntax (| col1 | col2 |). "
                 "Do not summarize."
             )
@@ -265,23 +274,27 @@ class PDFExtractor:
                         ]
                     )
                     if response and response.text and len(response.text.strip()) > 10:
-                        logger.info(f"Gemini Vision OCR ({m}) transcribed '{os.path.basename(file_path)}'.")
+                        logger.info(f"DataLens AI Vision OCR ({m}) transcribed '{os.path.basename(file_path)}'.")
                         return response.text.strip()
                 except Exception as e1:
-                    logger.warning(f"Gemini PDF bytes OCR ({m}) attempt: {e1}")
+                    err_str = str(e1)
+                    logger.warning(f"OCR ({m}) attempt error: {e1}")
+                    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                        break
                     continue
 
-            # Strategy 2: High-Res Rendered Page Image OCR (via pypdfium2)
+            # Strategy 2: Rendered Page Image OCR (via pypdfium2)
             try:
                 import pypdfium2
                 import io
                 pdf_doc = pypdfium2.PdfDocument(file_path)
                 page_texts = []
                 for page_idx, page in enumerate(pdf_doc):
-                    pil_img = page.render(scale=2.0).to_pil()
+                    pil_img = page.render(scale=1.2).to_pil()
                     img_byte_arr = io.BytesIO()
-                    pil_img.save(img_byte_arr, format='JPEG', quality=90)
+                    pil_img.save(img_byte_arr, format='JPEG', quality=85)
                     img_bytes = img_byte_arr.getvalue()
+                    img_byte_arr.close()
 
                     for m in models_to_try:
                         try:
@@ -295,18 +308,23 @@ class PDFExtractor:
                             if resp and resp.text:
                                 page_texts.append(resp.text.strip())
                                 break
-                        except Exception:
+                        except Exception as e_page:
+                            if "429" in str(e_page) or "RESOURCE_EXHAUSTED" in str(e_page):
+                                break
                             continue
+
+                pdf_doc.close()
+                gc.collect()
 
                 if page_texts:
                     full_rendered_text = "\n\n".join(page_texts).strip()
                     if full_rendered_text:
-                        logger.info(f"pypdfium2 + Gemini Vision OCR successfully transcribed '{os.path.basename(file_path)}'.")
+                        logger.info(f"pypdfium2 + Vision OCR successfully transcribed '{os.path.basename(file_path)}'.")
                         return full_rendered_text
             except Exception as e2:
                 logger.warning(f"Rendered image OCR fallback error: {e2}")
 
         except Exception as ge:
-            logger.warning(f"Gemini Multimodal OCR initialization failed: {ge}")
+            logger.warning(f"Multimodal OCR initialization error: {ge}")
 
         return None

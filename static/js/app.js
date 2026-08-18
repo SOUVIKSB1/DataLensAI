@@ -247,7 +247,12 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        data = { detail: `Server responded with status ${res.status} (${res.statusText || 'Upload Error'})` };
+      }
       
       // Reset input so user never needs to reload to re-upload
       if (fileInput) fileInput.value = "";
@@ -297,7 +302,12 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: text }),
         });
-        const data = await res.json();
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (je) {
+          data = { detail: "Server error parsing response." };
+        }
         hideAnalyzingOverlay();
 
         if (res.ok) {
@@ -335,7 +345,12 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: text }),
         });
-        const data = await res.json();
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (je) {
+          data = { detail: "Server error parsing response." };
+        }
         hideAnalyzingOverlay();
 
         if (res.ok) {
