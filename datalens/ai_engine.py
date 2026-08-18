@@ -72,7 +72,7 @@ class AIEngine:
             return None
 
         # Candidate models to try in sequence
-        models_to_try = [self.model_name, "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest", "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
+        models_to_try = [self.model_name, "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest", "gemini-2.5-flash", "gemini-3.7-flash"]
         models_to_try = list(dict.fromkeys(models_to_try))
 
         # 1. Try modern google-genai SDK
@@ -96,7 +96,10 @@ class AIEngine:
                     if resp and resp.text:
                         return resp.text.strip()
             except Exception as e:
-                app_logger.warning(f"Model {m} attempt failed: {e}")
+                err_str = str(e)
+                app_logger.warning(f"Model {m} attempt: {e}")
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    break
                 continue
 
         return None

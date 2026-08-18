@@ -296,9 +296,9 @@ def _load_pdf(file_path: str) -> Tuple[pd.DataFrame, Dict[str, Any]]:
     # Case C: If completely unreadable / 0 text and 0 tables
     if not full_text:
         raise ValueError(
-            f"The uploaded document '{os.path.basename(file_path)}' contains no analyzable tabular data "
-            "or readable text. It appears to be an un-OCR'd image scan or empty document. "
-            "Please configure your Gemini API key for automatic vision OCR or upload a machine-readable document."
+            f"The uploaded document '{os.path.basename(file_path)}' contains no selectable text or tabular cells. "
+            "It appears to be a scanned image/photo. If your Gemini API free-tier quota is reached, "
+            "please paste the text directly into the '📋 Paste Text Directly' tab or upload a standard text PDF, CSV, or Excel file."
         )
 
     # Case D: General text document (e.g. report, transcript, essay) -> structured analysis table
