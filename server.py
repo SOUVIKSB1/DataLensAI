@@ -121,6 +121,9 @@ def _update_session_pipeline(df: pd.DataFrame, dataset_name: str, is_cleaned: bo
         api_key=active_key,
     )
 
+    import gc
+    gc.collect()
+
     app_logger.info(f"Analytical pipeline refreshed for '{dataset_name}'. Rows: {len(active_df)}, Cols: {len(active_df.columns)}")
 
 
@@ -153,6 +156,9 @@ async def upload_file(file: UploadFile = File(...)):
         else:
             format_label = meta.get("format", "file").upper()
 
+        import gc
+        gc.collect()
+
         return {
             "status": "success",
             "message": f"Successfully loaded '{file.filename}' [{format_label}]",
@@ -166,6 +172,8 @@ async def upload_file(file: UploadFile = File(...)):
         }
     except Exception as e:
         app_logger.error(f"Upload error: {e}")
+        import gc
+        gc.collect()
         raise HTTPException(status_code=400, detail=str(e))
 
 

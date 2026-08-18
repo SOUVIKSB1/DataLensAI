@@ -55,9 +55,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================================================
-  // 1. Hub Navigation
+  // 1. Hub Navigation (Exposed Globally)
   // =========================================================
-  function switchHub(targetHubId) {
+  window.switchHub = function(targetHubId) {
     hubButtons.forEach((btn) => {
       if (btn.getAttribute("data-hub") === targetHubId) {
         btn.classList.add("active");
@@ -76,12 +76,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (navCenterHubs) navCenterHubs.classList.remove("mobile-open");
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  function switchHub(targetHubId) {
+    window.switchHub(targetHubId);
   }
 
   hubButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const hubId = btn.getAttribute("data-hub");
-      switchHub(hubId);
+      window.switchHub(hubId);
+    });
+  });
+
+  // Explicitly bind all Back to Data Studio buttons
+  document.querySelectorAll(".back-to-data-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.switchHub("hub-data");
     });
   });
 
@@ -91,12 +103,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const actionBtnMl = document.getElementById("actionBtnMl");
   const actionBtnExport = document.getElementById("actionBtnExport");
 
-  if (actionBtnClean) actionBtnClean.addEventListener("click", () => switchHub("hub-quality"));
-  if (actionBtnAi) actionBtnAi.addEventListener("click", () => switchHub("hub-ai"));
-  if (actionBtnMl) actionBtnMl.addEventListener("click", () => switchHub("hub-ml"));
-  if (actionBtnExport) actionBtnExport.addEventListener("click", () => switchHub("hub-export"));
+  if (actionBtnClean) actionBtnClean.addEventListener("click", () => window.switchHub("hub-quality"));
+  if (actionBtnAi) actionBtnAi.addEventListener("click", () => window.switchHub("hub-ai"));
+  if (actionBtnMl) actionBtnMl.addEventListener("click", () => window.switchHub("hub-ml"));
+  if (actionBtnExport) actionBtnExport.addEventListener("click", () => window.switchHub("hub-export"));
 
-  if (navBrandBtn) navBrandBtn.addEventListener("click", () => switchHub("hub-home"));
+  if (navBrandBtn) navBrandBtn.addEventListener("click", () => window.switchHub("hub-home"));
   if (mobileNavToggle) {
     mobileNavToggle.addEventListener("click", () => {
       navCenterHubs.classList.toggle("mobile-open");
@@ -104,15 +116,73 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================================================
-  // 2. Ingestion Hub Tabs
+  // 2. Analyzing Animation Overlay Engine
+  // =========================================================
+  let analyzingStepTimer = null;
+  function showAnalyzingOverlay(title = "Analyzing Dataset...", subtitle = "Extracting structure, profiling schema & synthesizing intelligence", customSteps = null) {
+    const overlay = document.getElementById("analyzingOverlay");
+    const titleEl = document.getElementById("analyzingTitle");
+    const subEl = document.getElementById("analyzingSubtitle");
+    if (!overlay) return;
+
+    if (titleEl) titleEl.textContent = title;
+    if (subEl) subEl.textContent = subtitle;
+
+    const steps = customSteps || [
+      "Parsing file structure & data encoding",
+      "Computing statistical distributions & correlations",
+      "Running zero-trust PII & privacy audit",
+      "Finalizing DataLens AI Intelligence Engine"
+    ];
+
+    for (let i = 1; i <= 4; i++) {
+      const stepEl = document.getElementById(`animStep${i}`);
+      const textEl = document.getElementById(`animStep${i}Text`);
+      if (stepEl) {
+        stepEl.className = "analyzing-step" + (i === 1 ? " active" : "");
+      }
+      if (textEl && steps[i-1]) {
+        textEl.textContent = steps[i-1];
+      }
+    }
+
+    overlay.style.display = "flex";
+
+    if (analyzingStepTimer) clearInterval(analyzingStepTimer);
+    let curr = 1;
+    analyzingStepTimer = setInterval(() => {
+      const prevStep = document.getElementById(`animStep${curr}`);
+      if (prevStep) {
+        prevStep.className = "analyzing-step completed";
+      }
+      curr++;
+      if (curr <= 4) {
+        const nextStep = document.getElementById(`animStep${curr}`);
+        if (nextStep) nextStep.className = "analyzing-step active";
+      } else {
+        clearInterval(analyzingStepTimer);
+      }
+    }, 550);
+  }
+
+  function hideAnalyzingOverlay() {
+    const overlay = document.getElementById("analyzingOverlay");
+    if (analyzingStepTimer) clearInterval(analyzingStepTimer);
+    if (overlay) {
+      overlay.style.display = "none";
+    }
+  }
+
+  // =========================================================
+  // 3. Ingestion Hub Tabs
   // =========================================================
   function setIngestTab(tab) {
-    [tabUploadFileBtn, tabPasteTextBtn, tabSampleDatasetsBtn].forEach((btn) => {
-      if (btn) btn.className = "btn btn-sm btn-secondary";
-    });
-    [ingestTabUpload, ingestTabPaste, ingestTabSamples].forEach((sec) => {
-      if (sec) sec.style.display = "none";
-    });
+    if (tabUploadFileBtn && tabPasteTextBtn) {
+      tabUploadFileBtn.className = "btn btn-sm btn-secondary";
+      tabPasteTextBtn.className = "btn btn-sm btn-secondary";
+    }
+    if (ingestTabUpload) ingestTabUpload.style.display = "none";
+    if (ingestTabPaste) ingestTabPaste.style.display = "none";
 
     if (tab === "upload") {
       if (tabUploadFileBtn) tabUploadFileBtn.className = "btn btn-sm btn-outline-orange active";
@@ -120,87 +190,15 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (tab === "paste") {
       if (tabPasteTextBtn) tabPasteTextBtn.className = "btn btn-sm btn-outline-orange active";
       if (ingestTabPaste) ingestTabPaste.style.display = "block";
-    } else if (tab === "samples") {
-      if (tabSampleDatasetsBtn) tabSampleDatasetsBtn.className = "btn btn-sm btn-outline-orange active";
-      if (ingestTabSamples) ingestTabSamples.style.display = "block";
     }
   }
 
   if (tabUploadFileBtn) tabUploadFileBtn.addEventListener("click", () => setIngestTab("upload"));
   if (tabPasteTextBtn) tabPasteTextBtn.addEventListener("click", () => setIngestTab("paste"));
-  if (tabSampleDatasetsBtn) tabSampleDatasetsBtn.addEventListener("click", () => setIngestTab("samples"));
 
   // =========================================================
-  // 3. Gemini API Key Modal Management
+  // 4. Ingestion Triggers (Dropzone, Browse, Paste)
   // =========================================================
-  function openApiKeyModal() {
-    if (apiKeyModal) apiKeyModal.style.display = "flex";
-  }
-  function closeApiKeyModal() {
-    if (apiKeyModal) apiKeyModal.style.display = "none";
-  }
-
-  if (navApiKeyBtn) navApiKeyBtn.addEventListener("click", openApiKeyModal);
-  if (closeApiKeyModalBtn) closeApiKeyModalBtn.addEventListener("click", closeApiKeyModal);
-  if (cancelApiKeyModalBtn) cancelApiKeyModalBtn.addEventListener("click", closeApiKeyModal);
-
-  async function checkGeminiStatus() {
-    try {
-      const res = await fetch("/api/config/api-key-status");
-      const data = await res.json();
-      if (data.has_key) {
-        if (navGeminiStatusIcon) navGeminiStatusIcon.textContent = "⚡";
-        if (navGeminiStatusText) navGeminiStatusText.textContent = "DataLens AI Active";
-        if (homeGeminiStatusPill) homeGeminiStatusPill.innerHTML = "⚡ DataLens AI Intelligence Active";
-      } else {
-        if (navGeminiStatusIcon) navGeminiStatusIcon.textContent = "⚡";
-        if (navGeminiStatusText) navGeminiStatusText.textContent = "DataLens AI";
-        if (homeGeminiStatusPill) homeGeminiStatusPill.innerHTML = "⚡ DataLens AI Engine Ready";
-      }
-    } catch (e) {
-      console.warn("Could not fetch AI status:", e);
-    }
-  }
-
-  if (saveModalApiKeyBtn) {
-    saveModalApiKeyBtn.addEventListener("click", async () => {
-      const key = modalApiKeyInput ? modalApiKeyInput.value.trim() : "";
-      if (!key) {
-        alert("Please enter a valid API key (starts with AIzaSy...).");
-        return;
-      }
-      saveModalApiKeyBtn.disabled = true;
-      saveModalApiKeyBtn.textContent = "Verifying...";
-      if (modalKeyFeedback) modalKeyFeedback.innerHTML = "<span style='color: var(--orange-bright);'>Testing connection with DataLens AI Engine...</span>";
-
-      try {
-        const res = await fetch("/api/config/api-key", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ api_key: key }),
-        });
-        const data = await res.json();
-        saveModalApiKeyBtn.disabled = false;
-        saveModalApiKeyBtn.textContent = "Connect Key";
-
-        if (res.ok) {
-          if (data.verified) {
-            checkGeminiStatus();
-            if (modalKeyFeedback) modalKeyFeedback.innerHTML = "<span style='color: #10B981;'>✓ Connected & Verified with DataLens AI!</span>";
-            setTimeout(closeApiKeyModal, 1200);
-          } else {
-            if (modalKeyFeedback) modalKeyFeedback.innerHTML = "<span style='color: var(--amber);'>Key saved successfully!</span>";
-            setTimeout(closeApiKeyModal, 1500);
-          }
-        }
-      } catch (err) {
-        saveModalApiKeyBtn.disabled = false;
-        saveModalApiKeyBtn.textContent = "Connect Key";
-        if (modalKeyFeedback) modalKeyFeedback.innerHTML = "<span style='color: var(--rose);'>Failed to connect.</span>";
-      }
-    });
-  }
-
   const navUploadNewBtn = document.getElementById("navUploadNewBtn");
   if (navUploadNewBtn && fileInput) {
     navUploadNewBtn.addEventListener("click", () => fileInput.click());
@@ -208,9 +206,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const initialDropZoneHtml = dropZone ? dropZone.innerHTML : "";
 
-  // =========================================================
-  // 4. Ingestion Triggers (Dropzone, Browse, Paste, Sample)
-  // =========================================================
   if (fileInput) {
     fileInput.addEventListener("change", (e) => {
       if (e.target.files.length > 0) {
@@ -237,16 +232,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function uploadFile(file) {
+    showAnalyzingOverlay(`Analyzing '${file.name}'...`, "Extracting structure, calculating metrics & synthesizing intelligence", [
+      `Parsing '${file.name}' file structure`,
+      "Computing statistics & distributions",
+      "Running zero-trust PII & privacy audit",
+      "Activating DataLens AI Studio"
+    ]);
+
     const formData = new FormData();
     formData.append("file", file);
-
-    if (dropZone) {
-      dropZone.innerHTML = `
-        <div class="drop-icon" style="animation: spin 1s infinite linear;">⚙️</div>
-        <h4 style="color: #FFFFFF; font-size: 1.2rem;">Analyzing '${file.name}'...</h4>
-        <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.5rem;">Extracting structure, PII scan & running intelligence pipeline...</p>
-      `;
-    }
 
     try {
       const res = await fetch("/api/upload", {
@@ -255,27 +249,30 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       const data = await res.json();
       
-      // Reset input and dropzone so user never needs to reload
+      // Reset input so user never needs to reload to re-upload
       if (fileInput) fileInput.value = "";
       if (dropZone) dropZone.innerHTML = initialDropZoneHtml;
 
       if (res.ok) {
         await fetchDatasetState(1);
+        hideAnalyzingOverlay();
         if (data.is_resume) {
-          switchHub("hub-resume");
+          window.switchHub("hub-resume");
         } else if (data.is_marksheet) {
-          switchHub("hub-marksheet");
+          window.switchHub("hub-marksheet");
         } else {
-          switchHub("hub-data");
+          window.switchHub("hub-data");
         }
       } else {
+        hideAnalyzingOverlay();
         alert(data.detail || "File processing failed.");
       }
     } catch (err) {
+      hideAnalyzingOverlay();
       console.error("Upload error:", err);
       if (fileInput) fileInput.value = "";
       if (dropZone) dropZone.innerHTML = initialDropZoneHtml;
-      alert("Error uploading file.");
+      alert("Error uploading file: " + (err.message || "Network error."));
     }
   }
 
@@ -283,12 +280,16 @@ document.addEventListener("DOMContentLoaded", () => {
   if (analyzePastedResumeBtn) {
     analyzePastedResumeBtn.addEventListener("click", async () => {
       const text = pasteResumeInput ? pasteResumeInput.value.trim() : "";
-      if (!text || text.length < 30) {
-        alert("Please paste more than 30 characters of resume or document content.");
+      if (!text || text.length < 20) {
+        alert("Please paste resume content to analyze.");
         return;
       }
-      analyzePastedResumeBtn.disabled = true;
-      analyzePastedResumeBtn.textContent = "⚡ Analyzing Resume (Scoring 10.0)...";
+      showAnalyzingOverlay("Analyzing Resume...", "Scoring executive metrics, ATS compliance & tech stack", [
+        "Parsing resume sections & work bullets",
+        "Evaluating action verbs & metric impact",
+        "Assessing 2026 tech stack readiness",
+        "Generating DataLens AI recommendations"
+      ]);
 
       try {
         const res = await fetch("/api/resume/analyze-text", {
@@ -297,70 +298,58 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({ text: text }),
         });
         const data = await res.json();
-        analyzePastedResumeBtn.disabled = false;
-        analyzePastedResumeBtn.textContent = "💼 Analyze & Score Resume (10.0)";
+        hideAnalyzingOverlay();
 
         if (res.ok) {
           await fetchDatasetState(1);
-          switchHub("hub-resume");
+          window.switchHub("hub-resume");
         } else {
           alert(data.detail || "Analysis failed.");
         }
       } catch (err) {
+        hideAnalyzingOverlay();
         console.error("Paste error:", err);
-        analyzePastedResumeBtn.disabled = false;
-        analyzePastedResumeBtn.textContent = "💼 Analyze & Score Resume (10.0)";
       }
     });
   }
 
-  // Load Sample HR Data
-  async function loadSampleHRData() {
-    try {
-      const res = await fetch("/api/load-sample");
-      const data = await res.json();
-      if (res.ok) {
-        await fetchDatasetState(1);
-        switchHub("hub-data");
+  // Paste Marksheet Action
+  const analyzePastedMarksheetBtn = document.getElementById("analyzePastedMarksheetBtn");
+  if (analyzePastedMarksheetBtn) {
+    analyzePastedMarksheetBtn.addEventListener("click", async () => {
+      const text = pasteResumeInput ? pasteResumeInput.value.trim() : "";
+      if (!text || text.length < 20) {
+        alert("Please paste marksheet or transcript text to analyze.");
+        return;
       }
-    } catch (err) {
-      console.error("Sample HR load error:", err);
-    }
-  }
+      showAnalyzingOverlay("Analyzing Marksheet...", "Parsing subject scores, percentage & GPA", [
+        "Extracting subject marks & max marks",
+        "Calculating aggregate percentage & GPA",
+        "Identifying strongest & improvement areas",
+        "Generating DataLens AI guidance"
+      ]);
 
-  // Load Sample Resume Data
-  async function loadSampleResumeData() {
-    try {
-      const res = await fetch("/api/load-sample-resume", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        await fetchDatasetState(1);
-        switchHub("hub-resume");
+      try {
+        const res = await fetch("/api/marksheet/analyze-text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: text }),
+        });
+        const data = await res.json();
+        hideAnalyzingOverlay();
+
+        if (res.ok) {
+          await fetchDatasetState(1);
+          window.switchHub("hub-marksheet");
+        } else {
+          alert(data.detail || "Marksheet analysis failed.");
+        }
+      } catch (err) {
+        hideAnalyzingOverlay();
+        console.error("Paste marksheet error:", err);
       }
-    } catch (err) {
-      console.error("Sample resume load error:", err);
-    }
+    });
   }
-
-  // Load Sample Marksheet Data
-  async function loadSampleMarksheetData() {
-    try {
-      const res = await fetch("/api/load-sample-marksheet", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        await fetchDatasetState(1);
-        switchHub("hub-marksheet");
-      }
-    } catch (err) {
-      console.error("Sample marksheet load error:", err);
-    }
-  }
-
-  if (quickSampleBtn) quickSampleBtn.addEventListener("click", loadSampleHRData);
-  if (heroSampleBtn) heroSampleBtn.addEventListener("click", loadSampleHRData);
-  if (heroResumeBtn) heroResumeBtn.addEventListener("click", loadSampleResumeData);
-  const heroMarksheetBtn = document.getElementById("heroMarksheetBtn");
-  if (heroMarksheetBtn) heroMarksheetBtn.addEventListener("click", loadSampleMarksheetData);
 
   // =========================================================
   // 5. Dataset State Synchronization & UI Hydration
@@ -1175,11 +1164,20 @@ document.addEventListener("DOMContentLoaded", () => {
     runAutoCleanBtn.addEventListener("click", async () => {
       runAutoCleanBtn.disabled = true;
       runAutoCleanBtn.textContent = "🧼 Cleaning Dataset...";
+      showAnalyzingOverlay("Sanitizing Dataset...", "Executing automated 1-click hygiene & repair pipeline", [
+        "Detecting & dropping duplicate records",
+        "Imputing missing values with median / mode",
+        "Winsorizing statistical IQR outliers",
+        "Recalculating dataset health score"
+      ]);
+
       try {
         const res = await fetch("/api/clean/auto", { method: "POST" });
         const data = await res.json();
         runAutoCleanBtn.disabled = false;
         runAutoCleanBtn.textContent = "🧼 Run Full Auto-Clean";
+        hideAnalyzingOverlay();
+
         if (res.ok) {
           await fetchDatasetState(1);
 
@@ -1204,6 +1202,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (resCard) resCard.style.display = "block";
         }
       } catch (e) {
+        hideAnalyzingOverlay();
         runAutoCleanBtn.disabled = false;
         runAutoCleanBtn.textContent = "🧼 Run Full Auto-Clean";
       }
@@ -1261,6 +1260,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       trainModelBtn.disabled = true;
       trainModelBtn.textContent = "🧠 Training ML Model...";
+      showAnalyzingOverlay(`Training Model on '${targetCol}'...`, "Auto-detecting task, training estimators & computing feature weights", [
+        `Analyzing target distribution for '${targetCol}'`,
+        "Splitting train/test & pre-processing features",
+        "Training Random Forest & Linear estimators",
+        "Computing permutation feature importance"
+      ]);
 
       try {
         const res = await fetch("/api/ml/train", {
@@ -1271,6 +1276,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await res.json();
         trainModelBtn.disabled = false;
         trainModelBtn.textContent = "🚀 Train & Evaluate Model";
+        hideAnalyzingOverlay();
 
         if (res.ok) {
           const result = data.result;
@@ -1282,7 +1288,7 @@ document.addEventListener("DOMContentLoaded", () => {
             metricsGrid.innerHTML = Object.entries(result.metrics).map(([k, v]) => `
               <div class="glass-card kpi-card">
                 <div class="kpi-label">${k}</div>
-                <div class="kpi-val orange">${v}</div>
+                <div class="kpi-val orange" style="font-size: 1.8rem;">${typeof v === 'number' ? v.toFixed(3) : v}</div>
               </div>
             `).join("");
           }
@@ -1323,6 +1329,7 @@ document.addEventListener("DOMContentLoaded", () => {
           alert(data.detail || "Model training failed.");
         }
       } catch (e) {
+        hideAnalyzingOverlay();
         trainModelBtn.disabled = false;
         trainModelBtn.textContent = "🚀 Train & Evaluate Model";
       }
@@ -1337,13 +1344,23 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshBriefingBtn.addEventListener("click", async () => {
       const box = document.getElementById("briefingContentBox");
       if (box) box.innerHTML = "<p style='color: var(--orange-bright);'>⚡ Compiling multi-agent executive briefing...</p>";
+      showAnalyzingOverlay("Generating Executive Briefing...", "Orchestrating 4 autonomous DataLens AI sub-agents", [
+        "Synthesizing EDA & distribution metrics",
+        "Evaluating correlation patterns & hypotheses",
+        "Formulating strategic executive conclusions",
+        "Formatting verifiable mathematical proofs"
+      ]);
+
       try {
         const res = await fetch("/api/ai/briefing");
         const data = await res.json();
+        hideAnalyzingOverlay();
         if (res.ok && box) {
           box.innerHTML = marked.parse(data.briefing);
         }
-      } catch (e) {}
+      } catch (e) {
+        hideAnalyzingOverlay();
+      }
     });
   }
 

@@ -52,7 +52,6 @@
         </button>
 
         <button id="resetDataBtn" class="btn btn-secondary btn-sm" style="display: none;">↺ Raw</button>
-        <button id="quickSampleBtn" class="btn btn-secondary btn-sm" style="font-size: 0.82rem;">📊 CSV Sample</button>
         <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle navigation">☰</button>
       </div>
 
@@ -87,17 +86,16 @@
       <div style="text-align: center; max-width: 960px; margin: 0 auto 3rem;">
         <div class="home-hero-badge">⚡ Enterprise Data Science & Executive Talent Intelligence</div>
         <h1 class="home-hero-title">
-          Analyze, Clean & Master Any <br><span>Dataset or Resume with AI</span>
+          Analyze, Clean & Master Any <br><span>Dataset, Resume or Marksheet</span>
         </h1>
         <p class="home-hero-subtitle">
-          Instantly turn raw CSVs, Excel sheets, and complex PDF resumes into boardroom-ready statistical insights, predictive machine learning models, and ATS-optimized career scorecards with zero AI hallucinations.
+          Instantly turn raw CSVs, Excel spreadsheets, multi-semester marksheets, and PDF resumes into boardroom-ready statistical distributions, predictive machine learning models, and actionable career guidance with zero hallucinations.
         </p>
 
         <!-- Quick Action Hero Triggers -->
         <div style="display: flex; gap: 0.85rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem;">
           <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">📁 Ingest Your File</button>
-          <button id="heroSampleBtn" class="btn btn-outline-orange">📊 Explore HR Analytics Demo</button>
-          <button id="heroResumeBtn" class="btn btn-secondary">💼 Test Resume AI Scoring</button>
+          <button class="btn btn-outline-orange" onclick="document.getElementById('tabPasteTextBtn').click()">📋 Paste Text / Resume Directly</button>
         </div>
       </div>
 
@@ -106,9 +104,8 @@
         
         <!-- Ingestion Tabs -->
         <div style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-          <button id="tabUploadFileBtn" class="btn btn-sm btn-outline-orange active" style="border-radius: var(--radius-sm);">📁 Upload File (CSV, Excel, PDF, DB)</button>
-          <button id="tabPasteTextBtn" class="btn btn-sm btn-secondary" style="border-radius: var(--radius-sm);">📋 Paste Text / Resume Directly</button>
-          <button id="tabSampleDatasetsBtn" class="btn btn-sm btn-secondary" style="border-radius: var(--radius-sm);">⚡ Instant Demo Datasets</button>
+          <button id="tabUploadFileBtn" class="btn btn-sm btn-outline-orange active" style="border-radius: var(--radius-sm);">📁 Upload File (CSV, Excel, PDF, Marksheet, Resume, DB)</button>
+          <button id="tabPasteTextBtn" class="btn btn-sm btn-secondary" style="border-radius: var(--radius-sm);">📋 Paste Text Directly</button>
         </div>
 
         <!-- Ingestion Tab 1: Drop Zone -->
@@ -117,7 +114,7 @@
             <div class="drop-icon">📤</div>
             <h4 style="font-size: 1.25rem; font-weight: 700; color: #FFFFFF;">Drag & Drop your file here</h4>
             <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.4rem; margin-bottom: 1.25rem;">
-              Auto-detects format, delimiters, encodings, nested structures & resume tables
+              Auto-detects format, delimiters, encodings, nested structures, marksheets & resumes
             </p>
             
             <!-- Supported Format Badges -->
@@ -127,7 +124,7 @@
               <span class="badge badge-num">JSON / JSONL</span>
               <span class="badge badge-date">Apache Parquet</span>
               <span class="badge badge-id">SQLite (.db)</span>
-              <span class="badge" style="background: rgba(244, 63, 94, 0.15); color: #FB7185; border: 1px solid rgba(244, 63, 94, 0.3);">PDF Tables</span>
+              <span class="badge" style="background: rgba(244, 63, 94, 0.15); color: #FB7185; border: 1px solid rgba(244, 63, 94, 0.3);">PDF Marksheets</span>
               <span class="badge" style="background: rgba(255, 107, 0, 0.18); color: #FFA04D; border: 1px solid var(--border-glass-orange);">Resume / CV (PDF & Doc)</span>
             </div>
 
@@ -139,62 +136,28 @@
         <!-- Ingestion Tab 2: Paste Raw Text -->
         <div id="ingestTabPaste" style="display: none;">
           <div style="padding: 1rem 0;">
-            <h4 style="font-size: 1.1rem; color: #FFFFFF; margin-bottom: 0.5rem;">Paste Resume Text or Unstructured Document Content</h4>
+            <h4 style="font-size: 1.1rem; color: #FFFFFF; margin-bottom: 0.5rem;">Paste Resume, Marksheet or Text Content</h4>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
-              No file handy? Simply paste your resume bullets, job summary, or unstructured text to run the 10.0 Executive Scoring & Google XYZ rewriter.
+              Paste your resume bullets, transcript marks, or raw text to run instant executive analysis.
             </p>
-            <textarea id="pasteResumeInput" class="form-control" rows="8" placeholder="Paste your resume content, experience bullets, contact info, and skills here..." style="width: 100%; font-family: var(--font-sans); font-size: 0.9rem; margin-bottom: 1rem;"></textarea>
-            <div style="display: flex; justify-content: flex-end;">
-              <button id="analyzePastedResumeBtn" class="btn btn-primary">💼 Analyze & Score Resume (10.0)</button>
+            <textarea id="pasteResumeInput" class="form-control" rows="8" placeholder="Paste your resume content, marksheet details, or dataset text here..." style="width: 100%; font-family: var(--font-sans); font-size: 0.9rem; margin-bottom: 1rem;"></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+              <button id="analyzePastedMarksheetBtn" class="btn btn-secondary">🎓 Analyze as Marksheet</button>
+              <button id="analyzePastedResumeBtn" class="btn btn-primary">💼 Analyze & Score Resume</button>
             </div>
           </div>
         </div>
 
-        <!-- Ingestion Tab 3: Curated Demo Datasets -->
-        <div id="ingestTabSamples" style="display: none;">
-          <div style="padding: 1rem 0;">
-            <h4 style="font-size: 1.1rem; color: #FFFFFF; margin-bottom: 0.5rem;">Explore Pre-Loaded Practical Datasets</h4>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
-              Test every feature of DataLens AI with 1 click using industry benchmark data:
-            </p>
-            <div class="grid-2">
-              <div class="glass-card" style="cursor: pointer; border: 1px solid var(--border-glass-orange); transition: transform 0.2s ease;" onclick="document.getElementById('heroSampleBtn').click()">
-                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                  <span style="font-size: 1.5rem;">👥</span>
-                  <div>
-                    <h4 style="color: #FFFFFF; font-size: 1rem;">Enterprise HR Analytics</h4>
-                    <p style="color: var(--text-muted); font-size: 0.8rem;">21 Employees • Salary, Attrition, Experience & Performance</p>
-                  </div>
-                </div>
-                <p style="color: var(--text-dim); font-size: 0.82rem;">Perfect for exploring automated EDA, outlier detection, Pearson correlations, and predictive modeling.</p>
-                <button class="btn btn-outline-orange btn-sm" style="margin-top: 0.75rem; width: 100%;">Load HR Dataset</button>
-              </div>
-
-              <div class="glass-card" style="cursor: pointer; border: 1px solid var(--border-glass-orange); transition: transform 0.2s ease;" onclick="document.getElementById('heroMarksheetBtn').click()">
-                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                  <span style="font-size: 1.5rem;">🎓</span>
-                  <div>
-                    <h4 style="color: #FFFFFF; font-size: 1rem;">Class XII Senior Marksheet</h4>
-                    <p style="color: var(--text-muted); font-size: 0.8rem;">CBSE Board • Math, Physics, CS, Chemistry & English</p>
-                  </div>
-                </div>
-                <p style="color: var(--text-dim); font-size: 0.82rem;">Calculates aggregate percentage, GPA, strongest & weakest subjects, subject charts, and Gemini career guidance.</p>
-                <button id="heroMarksheetBtn" class="btn btn-secondary btn-sm" style="margin-top: 0.75rem; width: 100%;">Load Sample Marksheet</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Privacy & Gemini Status Footer inside Ingestion Card -->
+        <!-- Privacy & DataLens AI Status Footer inside Ingestion Card -->
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-glass); padding-top: 1rem; margin-top: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <span style="font-size: 1.1rem;">🛡️</span>
             <span style="font-size: 0.82rem; color: var(--text-muted);">
-              <strong>Zero-Trust PII Shield:</strong> Emails, phones, SSNs, and IDs are automatically masked client-side and server-side.
+              <strong>Zero-Trust PII Shield:</strong> Sensitive identifiers masked automatically.
             </span>
           </div>
           <div id="homeGeminiStatusPill" style="font-size: 0.82rem; color: var(--emerald); font-weight: 600;">
-            ⚡ Gemini 3.7 / 2.5 Active
+            ⚡ DataLens AI Ready
           </div>
         </div>
 
@@ -743,7 +706,7 @@
       
       <!-- Back Navigation Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <button class="btn btn-secondary btn-sm" onclick="switchHub('hub-data')">◀ Back to Data Studio</button>
+        <button class="btn btn-secondary btn-sm back-to-data-btn" onclick="window.switchHub('hub-data')">◀ Back to Data Studio</button>
         <span class="pill pill-orange">🧼 Data Cleaning & Hygiene Mode</span>
       </div>
 
@@ -824,7 +787,7 @@
       
       <!-- Back Navigation Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <button class="btn btn-secondary btn-sm" onclick="switchHub('hub-data')">◀ Back to Data Studio</button>
+        <button class="btn btn-secondary btn-sm back-to-data-btn" onclick="window.switchHub('hub-data')">◀ Back to Data Studio</button>
         <span class="pill pill-orange">🧠 Predictive AutoML Mode</span>
       </div>
 
@@ -868,8 +831,8 @@
       
       <!-- Back Navigation Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <button class="btn btn-secondary btn-sm" onclick="switchHub('hub-data')">◀ Back to Data Studio</button>
-        <span class="pill pill-orange">🤖 Gemini Grounded Intelligence</span>
+        <button class="btn btn-secondary btn-sm back-to-data-btn" onclick="window.switchHub('hub-data')">◀ Back to Data Studio</button>
+        <span class="pill pill-orange">⚡ DataLens AI Intelligence</span>
       </div>
 
       <!-- Multi-Agent Executive Briefing -->
@@ -890,7 +853,7 @@
       <div class="glass-card chat-container">
         <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 0.5rem;">💬 Conversational Data Analyst</h3>
         <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
-          Ask any question about your data in natural language. Powered by Gemini with verifiable evidence tags.
+          Ask any question about your data in natural language. Powered by DataLens AI with verifiable evidence tags.
         </p>
 
         <!-- Suggested Prompt Chips -->
@@ -920,7 +883,7 @@
       
       <!-- Back Navigation Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <button class="btn btn-secondary btn-sm" onclick="switchHub('hub-data')">◀ Back to Data Studio</button>
+        <button class="btn btn-secondary btn-sm back-to-data-btn" onclick="window.switchHub('hub-data')">◀ Back to Data Studio</button>
         <span class="pill pill-orange">📑 Export Studio</span>
       </div>
 
@@ -949,6 +912,38 @@
       </div>
 
     </section>
+
+    <!-- ================= ANALYZING PROCESSING ANIMATION OVERLAY ================= -->
+    <div id="analyzingOverlay" class="analyzing-overlay" style="display: none;">
+      <div class="analyzing-card">
+        <div class="analyzing-spinner-wrapper">
+          <div class="analyzing-orbit orbit-1"></div>
+          <div class="analyzing-orbit orbit-2"></div>
+          <div class="analyzing-core">⚡</div>
+        </div>
+        <h3 id="analyzingTitle" class="analyzing-title">Analyzing Dataset...</h3>
+        <p id="analyzingSubtitle" class="analyzing-subtitle">Extracting structure, profiling schema & synthesizing intelligence</p>
+        
+        <div class="analyzing-steps">
+          <div class="analyzing-step active" id="animStep1">
+            <span class="step-dot"></span>
+            <span class="step-text" id="animStep1Text">Parsing file structure & data encoding</span>
+          </div>
+          <div class="analyzing-step" id="animStep2">
+            <span class="step-dot"></span>
+            <span class="step-text" id="animStep2Text">Computing statistical distributions & correlations</span>
+          </div>
+          <div class="analyzing-step" id="animStep3">
+            <span class="step-dot"></span>
+            <span class="step-text" id="animStep3Text">Running zero-trust PII & privacy audit</span>
+          </div>
+          <div class="analyzing-step" id="animStep4">
+            <span class="step-dot"></span>
+            <span class="step-text" id="animStep4Text">Finalizing DataLens AI Intelligence Engine</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </main>
 
