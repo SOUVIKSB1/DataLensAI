@@ -863,7 +863,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const colX = document.getElementById("chartColXSelect") ? document.getElementById("chartColXSelect").value : "";
     const colY = document.getElementById("chartColYSelect") ? document.getElementById("chartColYSelect").value : "";
 
-    if (!canvas || !d || !d.records || d.records.length === 0) return;
+    const records = d ? (d.chart_records || d.records || (d.sample_data && d.sample_data.records) || []) : [];
+
+    if (!canvas || !d || records.length === 0) return;
 
     if (colYWrapper) {
       colYWrapper.style.display = activeStudioChartType === "scatter" ? "flex" : "none";
@@ -885,7 +887,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (studioChartInstance) studioChartInstance.destroy();
     const ctx = canvas.getContext("2d");
 
-    const records = d.records;
     const xVals = records.map(r => r[colX]).filter(v => v !== undefined && v !== null && v !== "");
 
     if (activeStudioChartType === "hist") {
@@ -1076,15 +1077,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("dataTableContainer");
     if (!container || !d) return;
 
-    if (d.records && d.records.length > 0) {
-      const cols = d.columns || Object.keys(d.records[0]);
+    const records = d.records || (d.sample_data && d.sample_data.records) || [];
+
+    if (records && records.length > 0) {
+      const cols = d.columns || Object.keys(records[0]);
       container.innerHTML = `
-        <table>
+        <table class="data-table" style="width: 100%;">
           <thead>
             <tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr>
           </thead>
           <tbody>
-            ${d.records.map(row => `
+            ${records.map(row => `
               <tr>${cols.map(c => `<td>${row[c] !== undefined ? row[c] : ""}</td>`).join("")}</tr>
             `).join("")}
           </tbody>

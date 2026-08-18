@@ -210,7 +210,7 @@ async def analyze_marksheet_text(data: Dict[str, str]):
     return {"status": "success", "analysis": analysis, "is_marksheet": True}
 
 
-@app.post("/api/load-sample-marksheet")
+@app.api_route("/api/load-sample-marksheet", methods=["GET", "POST"])
 async def load_sample_marksheet():
     """Loads a benchmark Class XII / College transcript marksheet for instant demo."""
     sample_marksheet = """
@@ -280,7 +280,7 @@ async def analyze_resume_text(data: Dict[str, str]):
     return {"status": "success", "analysis": analysis, "is_resume": True}
 
 
-@app.post("/api/load-sample")
+@app.api_route("/api/load-sample", methods=["GET", "POST"])
 async def load_sample():
     """Loads the pre-packaged sample HR & Attrition dataset."""
     sample_path = os.path.join(os.path.dirname(__file__), "data", "auto_data_analyzer_test.csv")
@@ -291,7 +291,7 @@ async def load_sample():
     return {"status": "success", "message": "Sample HR dataset loaded", "rows": len(df), "cols": len(df.columns)}
 
 
-@app.post("/api/load-sample-resume")
+@app.api_route("/api/load-sample-resume", methods=["GET", "POST"])
 async def load_sample_resume():
     """Loads a benchmark sample Data Scientist resume for instant AI analysis demo."""
     sample_resume = """
@@ -430,6 +430,7 @@ async def get_dataset_state(page: int = 1, page_size: int = 15):
     start_idx = (page - 1) * page_size
     end_idx = min(start_idx + page_size, total_records)
     records = active_df.iloc[start_idx:end_idx].fillna("").to_dict(orient="records")
+    chart_records = active_df.head(1000).fillna("").to_dict(orient="records")
 
     return {
         "has_dataset": True,
@@ -446,6 +447,8 @@ async def get_dataset_state(page: int = 1, page_size: int = 15):
         "quality": SESSION["quality"],
         "statistics": SESSION["statistics"],
         "privacy": SESSION["privacy_report"],
+        "records": records,
+        "chart_records": chart_records,
         "sample_data": {
             "page": page,
             "page_size": page_size,
@@ -453,6 +456,35 @@ async def get_dataset_state(page: int = 1, page_size: int = 15):
             "records": records,
         }
     }
+
+
+@app.api_route("/api/clean/auto", methods=["GET", "POST"])
+async def auto_clean_dataset():
+    """Executes automatic 1-click full cleaning pipeline."""
+    if SESSION["raw_df"] is None:
+        raise HTTPException(status_code=400, detail="No dataset loaded.")
+
+    quality_obj = SESSION.get("_quality_obj") or DataQualityEngine(SESSION["raw_df"])
+    cleaned_df, log = quality_obj.clean_dataset(
+        drop_duplicates=True,
+        missing_strategy="impute_median",
+        outlier_strategy="cap_iqr",
+    )
+
+    _update_session_pipeline(cleaned_df, SESSION["dataset_name"], is_cleaned=True)
+    SESSION["cleaning_log"] = log
+
+    return {"status": "success", "message": "Dataset cleaned successfully", "log": log}
+
+
+@app.api_route("/api/clean/reset", methods=["GET", "POST"])
+@app.api_route("/api/reset-data", methods=["GET", "POST"])
+async def reset_clean_dataset():
+    """Resets dataset to original raw state."""
+    if SESSION["raw_df"] is None:
+        raise HTTPException(status_code=400, detail="No dataset loaded.")
+    _update_session_pipeline(SESSION["raw_df"], SESSION["dataset_name"], is_cleaned=False)
+    return {"status": "success", "message": "Dataset reset to raw original state"}
 
 
 @app.post("/api/clean")
@@ -476,15 +508,6 @@ async def clean_dataset(data: Dict[str, Any]):
     SESSION["cleaning_log"] = log
 
     return {"status": "success", "message": "Dataset cleaned successfully", "log": log}
-
-
-@app.post("/api/reset-data")
-async def reset_data():
-    """Resets dataset to original raw state."""
-    if SESSION["raw_df"] is None:
-        raise HTTPException(status_code=400, detail="No dataset loaded.")
-    _update_session_pipeline(SESSION["raw_df"], SESSION["dataset_name"], is_cleaned=False)
-    return {"status": "success", "message": "Dataset reset to raw original state"}
 
 
 @app.post("/api/ml/train")

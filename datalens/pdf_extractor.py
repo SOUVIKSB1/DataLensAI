@@ -240,7 +240,7 @@ class PDFExtractor:
             from google.genai import types
             
             client = genai.Client(api_key=api_key)
-            models_to_try = [os.getenv("MODEL_NAME", "gemini-2.5-flash"), "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
+            models_to_try = [os.getenv("MODEL_NAME", "gemini-2.0-flash"), "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp", "gemini-1.5-pro-latest", "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
             models_to_try = list(dict.fromkeys(models_to_try))
 
             with open(file_path, "rb") as f:
