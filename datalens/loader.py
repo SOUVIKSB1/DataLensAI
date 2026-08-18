@@ -230,9 +230,10 @@ def _load_sqlite(file_path: str, table_name: Optional[str] = None) -> Tuple[pd.D
 
 
 def _load_pdf(file_path: str) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """Extracts tabular data or resume text matrices from PDF documents using high-resilience PDFExtractor."""
+    """Extracts tabular data, marksheets, or resume text matrices from PDF documents using high-resilience PDFExtractor."""
     from datalens.pdf_extractor import PDFExtractor
     from datalens.resume_engine import ResumeEngine
+    from datalens.marksheet_engine import MarksheetEngine
 
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     full_text, all_tables = PDFExtractor.extract_full_text(file_path, api_key=api_key)
@@ -250,9 +251,26 @@ def _load_pdf(file_path: str) -> Tuple[pd.DataFrame, Dict[str, Any]]:
             return df, {
                 "format": "resume",
                 "is_resume": True,
+                "is_marksheet": False,
                 "raw_text": full_text,
                 "extracted_rows": len(df),
             }
+
+    # Case B: Check if it's a Marksheet / Transcript / Scorecard
+    if MarksheetEngine.is_marksheet(full_text, file_name=file_path):
+        lines = [line.strip() for line in full_text.split("\n") if line.strip()]
+        df = pd.DataFrame({
+            "Line_ID": list(range(1, len(lines) + 1)),
+            "Scorecard_Text": lines,
+            "Char_Count": [len(l) for l in lines],
+        })
+        return df, {
+            "format": "marksheet",
+            "is_resume": False,
+            "is_marksheet": True,
+            "raw_text": full_text,
+            "extracted_rows": len(df),
+        }
 
     # Case B: Found structured tabular dataset in PDF (e.g. Marksheet, financial tables)
     if all_tables:

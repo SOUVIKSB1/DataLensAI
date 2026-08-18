@@ -29,8 +29,9 @@
       <!-- Center Hub Navigation (Unlocks when dataset or resume is active) -->
       <nav class="nav-center-hubs hidden-nav" id="navCenterHubs">
         <button class="hub-tab-btn active" data-hub="hub-home"><span class="hub-icon">🏠</span> <span>Home</span></button>
-        <button class="hub-tab-btn" data-hub="hub-resume" id="navResumeBtn" style="display: none;"><span class="hub-icon">💼</span> <span>Resume AI</span></button>
-        <button class="hub-tab-btn" data-hub="hub-data" id="navDataBtn"><span class="hub-icon">📊</span> <span>Data Explorer</span></button>
+        <button class="hub-tab-btn" data-hub="hub-data" id="navDataBtn"><span class="hub-icon">📊</span> <span>CSV & Data</span></button>
+        <button class="hub-tab-btn" data-hub="hub-resume" id="navResumeBtn" style="display: none;"><span class="hub-icon">💼</span> <span>Resume Studio</span></button>
+        <button class="hub-tab-btn" data-hub="hub-marksheet" id="navMarksheetBtn" style="display: none;"><span class="hub-icon">🎓</span> <span>Marksheet Studio</span></button>
         <button class="hub-tab-btn" data-hub="hub-quality" id="navQualityBtn"><span class="hub-icon">🧼</span> <span>Cleaning</span></button>
         <button class="hub-tab-btn" data-hub="hub-ml" id="navMlBtn"><span class="hub-icon">🧠</span> <span>ML Studio</span></button>
         <button class="hub-tab-btn" data-hub="hub-ai" id="navAiBtn"><span class="hub-icon">🤖</span> <span>AI Analyst</span></button>
@@ -55,7 +56,7 @@
         </button>
 
         <button id="resetDataBtn" class="btn btn-secondary btn-sm" style="display: none;">↺ Raw</button>
-        <button id="quickSampleBtn" class="btn btn-secondary btn-sm" style="font-size: 0.82rem;">📊 Sample</button>
+        <button id="quickSampleBtn" class="btn btn-secondary btn-sm" style="font-size: 0.82rem;">📊 CSV Sample</button>
         <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle navigation">☰</button>
       </div>
 
@@ -181,16 +182,16 @@
                 <button class="btn btn-outline-orange btn-sm" style="margin-top: 0.75rem; width: 100%;">Load HR Dataset</button>
               </div>
 
-              <div class="glass-card" style="cursor: pointer; border: 1px solid var(--border-glass-orange); transition: transform 0.2s ease;" onclick="document.getElementById('heroResumeBtn').click()">
+              <div class="glass-card" style="cursor: pointer; border: 1px solid var(--border-glass-orange); transition: transform 0.2s ease;" onclick="document.getElementById('heroMarksheetBtn').click()">
                 <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                  <span style="font-size: 1.5rem;">💼</span>
+                  <span style="font-size: 1.5rem;">🎓</span>
                   <div>
-                    <h4 style="color: #FFFFFF; font-size: 1rem;">Staff AI Scientist Resume</h4>
-                    <p style="color: var(--text-muted); font-size: 0.8rem;">Benchmark Senior Profile • 2026 Tech Stack & Metric Bullets</p>
+                    <h4 style="color: #FFFFFF; font-size: 1rem;">Class XII Senior Marksheet</h4>
+                    <p style="color: var(--text-muted); font-size: 0.8rem;">CBSE Board • Math, Physics, CS, Chemistry & English</p>
                   </div>
                 </div>
-                <p style="color: var(--text-dim); font-size: 0.82rem;">Demonstrates 10.0 scoring, Google XYZ bullet point rewrites, recruiter red-flags audit, and mock interview prep.</p>
-                <button class="btn btn-secondary btn-sm" style="margin-top: 0.75rem; width: 100%;">Load Sample Resume</button>
+                <p style="color: var(--text-dim); font-size: 0.82rem;">Calculates aggregate percentage, GPA, strongest & weakest subjects, subject charts, and Gemini career guidance.</p>
+                <button id="heroMarksheetBtn" class="btn btn-secondary btn-sm" style="margin-top: 0.75rem; width: 100%;">Load Sample Marksheet</button>
               </div>
             </div>
           </div>
@@ -483,6 +484,105 @@
           <div id="atsSectionsList" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
             <!-- Populated via JS -->
           </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================= HUB 3: MARKSHEET & ACADEMIC STUDIO ================= -->
+    <section id="hub-marksheet" class="view-panel">
+      
+      <!-- Academic Header & Candidate Info -->
+      <div class="glass-card" style="margin-bottom: 2rem; border-left: 4px solid var(--orange-bright);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span class="brand-icon-bubble" style="width: 32px; height: 32px; font-size: 1rem;">🎓</span>
+              <h2 id="marksheetCandidateName" style="font-size: 1.5rem; font-weight: 800; color: #FFFFFF;">Student Scorecard</h2>
+              <span id="marksheetTierBadge" class="pill pill-success" style="font-size: 0.8rem;">Distinction Honors</span>
+            </div>
+            <p id="marksheetExamInfo" style="color: var(--text-muted); font-size: 0.88rem;">
+              Senior School Examination • Roll No: 12648920 • Passing Year: 2024
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <button class="btn btn-outline-orange btn-sm" onclick="switchHub('hub-ai')">
+              🤖 Consult AI Counselor
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Top Metric Cards (Aggregate %, GPA, Best Subject, Lowest Subject) -->
+      <div class="grid-4" style="margin-bottom: 2rem;">
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Overall Aggregate</div>
+          <div class="kpi-val" id="marksheetOverallPct" style="color: var(--emerald); font-size: 2.2rem; font-weight: 800;">91.3%</div>
+          <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.3rem;" id="marksheetTotalScore">548 / 600 Marks</div>
+        </div>
+
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Estimated GPA (10.0 / 4.0)</div>
+          <div class="kpi-val" id="marksheetGpa" style="color: var(--orange-bright); font-size: 2.2rem; font-weight: 800;">9.13</div>
+          <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.3rem;" id="marksheetGpa4">3.65 / 4.0 US Scale</div>
+        </div>
+
+        <div class="glass-card kpi-card" style="border-top: 2px solid var(--emerald);">
+          <div class="kpi-label">🥇 Strongest Subject</div>
+          <div class="kpi-val" id="marksheetStrongestSub" style="color: #FFFFFF; font-size: 1.25rem; font-weight: 700; word-break: break-word;">Computer Science</div>
+          <div style="font-size: 0.78rem; color: var(--emerald); font-weight: 600; margin-top: 0.3rem;" id="marksheetStrongestMarks">98 / 100 (98.0%)</div>
+        </div>
+
+        <div class="glass-card kpi-card" style="border-top: 2px solid var(--orange-amber);">
+          <div class="kpi-label">⚠️ Focus Improvement Area</div>
+          <div class="kpi-val" id="marksheetWeakestSub" style="color: #FFFFFF; font-size: 1.25rem; font-weight: 700; word-break: break-word;">Physics</div>
+          <div style="font-size: 0.78rem; color: var(--orange-amber); font-weight: 600; margin-top: 0.3rem;" id="marksheetWeakestMarks">85 / 100 (85.0%)</div>
+        </div>
+      </div>
+
+      <!-- Subject Breakdown Table & Interactive Chart -->
+      <div class="grid-2" style="margin-bottom: 2rem;">
+        <!-- Left: Subject Table -->
+        <div class="glass-card">
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; font-weight: 700; margin-bottom: 1rem;">📋 Subject-wise Performance Breakdown</h3>
+          <div class="table-container" style="max-height: 380px; overflow-y: auto;">
+            <table class="data-table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Obtained</th>
+                  <th>Max</th>
+                  <th>%</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody id="marksheetTableBody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Interactive Chart -->
+        <div class="glass-card">
+          <h3 style="font-size: 1.15rem; color: #FFFFFF; font-weight: 700; margin-bottom: 1rem;">📊 Subject Comparison vs 100% Benchmark</h3>
+          <div style="position: relative; height: 320px; width: 100%;">
+            <canvas id="marksheetCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gemini Academic Guidance & Career Pathways Card -->
+      <div class="glass-card" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.25rem;">⚡</span>
+            <h3 style="font-size: 1.25rem; color: #FFFFFF; font-weight: 700;">Google Gemini Academic & Career Intelligence</h3>
+          </div>
+          <span class="pill pill-orange">Deep Thinking Guidance</span>
+        </div>
+        <div id="marksheetGuidanceMarkdown" class="markdown-body" style="font-size: 0.95rem; line-height: 1.7; color: var(--text-main);">
+          <p style="color: var(--orange-bright);">Synthesizing career specializations and subject tactics...</p>
         </div>
       </div>
 

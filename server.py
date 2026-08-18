@@ -91,20 +91,26 @@ def _update_session_pipeline(df: pd.DataFrame, dataset_name: str, is_cleaned: bo
 
     active_key = SESSION.get("api_key") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
-    # 5. Check if it's strictly a Resume and run Resume Engine
+    # 5. Check if it's strictly a Resume or Marksheet
+    SESSION["resume_analysis"] = None
+    SESSION["marksheet_analysis"] = None
+
     if raw_text:
         from datalens.resume_engine import ResumeEngine
+        from datalens.marksheet_engine import MarksheetEngine
+
         if ResumeEngine.is_resume(raw_text, file_name=dataset_name):
             try:
                 engine = ResumeEngine(raw_text, file_name=dataset_name, api_key=active_key)
                 SESSION["resume_analysis"] = engine.analyze()
             except Exception as e:
                 app_logger.warning(f"Resume analysis error: {e}")
-                SESSION["resume_analysis"] = None
-        else:
-            SESSION["resume_analysis"] = None
-    else:
-        SESSION["resume_analysis"] = None
+        elif MarksheetEngine.is_marksheet(raw_text, file_name=dataset_name):
+            try:
+                engine = MarksheetEngine(raw_text, file_name=dataset_name, api_key=active_key)
+                SESSION["marksheet_analysis"] = engine.analyze()
+            except Exception as e:
+                app_logger.warning(f"Marksheet analysis error: {e}")
 
     # 6. AI Insight Engine
     SESSION["ai_engine"] = AIEngine(
@@ -138,7 +144,14 @@ async def upload_file(file: UploadFile = File(...)):
         SESSION["ingestion_meta"] = meta
 
         is_resume = meta.get("is_resume", False) or bool(SESSION.get("resume_analysis"))
-        format_label = "RESUME / CV" if is_resume else meta.get("format", "file").upper()
+        is_marksheet = meta.get("is_marksheet", False) or bool(SESSION.get("marksheet_analysis"))
+        
+        if is_resume:
+            format_label = "RESUME / CV"
+        elif is_marksheet:
+            format_label = "MARKSHEET / TRANSCRIPT"
+        else:
+            format_label = meta.get("format", "file").upper()
 
         return {
             "status": "success",
@@ -147,7 +160,9 @@ async def upload_file(file: UploadFile = File(...)):
             "cols": len(df.columns),
             "format": meta.get("format", "tabular"),
             "is_resume": is_resume,
+            "is_marksheet": is_marksheet,
             "resume_analysis": SESSION.get("resume_analysis"),
+            "marksheet_analysis": SESSION.get("marksheet_analysis"),
         }
     except Exception as e:
         app_logger.error(f"Upload error: {e}")
@@ -160,6 +175,84 @@ async def get_resume_analysis():
     if not SESSION.get("resume_analysis"):
         raise HTTPException(status_code=400, detail="No active resume document loaded.")
     return {"status": "success", "analysis": SESSION["resume_analysis"]}
+
+
+@app.get("/api/marksheet/analyze")
+async def get_marksheet_analysis():
+    """Returns GPA, highest/lowest subjects, and academic guidance for an uploaded marksheet."""
+    if not SESSION.get("marksheet_analysis"):
+        raise HTTPException(status_code=400, detail="No active marksheet or transcript loaded.")
+    return {"status": "success", "analysis": SESSION["marksheet_analysis"]}
+
+
+@app.post("/api/marksheet/analyze-text")
+async def analyze_marksheet_text(data: Dict[str, str]):
+    """Analyzes raw pasted marksheet or transcript text."""
+    text = data.get("text", "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Pasted marksheet text cannot be empty.")
+
+    from datalens.marksheet_engine import MarksheetEngine
+    engine = MarksheetEngine(text, file_name="Pasted_Marksheet.txt", api_key=SESSION.get("api_key"))
+    analysis = engine.analyze()
+    SESSION["marksheet_analysis"] = analysis
+    SESSION["resume_analysis"] = None
+
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    df = pd.DataFrame({
+        "Line_ID": list(range(1, len(lines) + 1)),
+        "Scorecard_Content": lines,
+        "Char_Count": [len(l) for l in lines],
+    })
+    _update_session_pipeline(df, "Pasted_Marksheet.txt", raw_text=text)
+    SESSION["ingestion_meta"] = {"format": "marksheet", "is_marksheet": True, "is_resume": False}
+
+    return {"status": "success", "analysis": analysis, "is_marksheet": True}
+
+
+@app.post("/api/load-sample-marksheet")
+async def load_sample_marksheet():
+    """Loads a benchmark Class XII / College transcript marksheet for instant demo."""
+    sample_marksheet = """
+    CENTRAL BOARD OF SECONDARY EDUCATION - SENIOR SCHOOL CERTIFICATE EXAMINATION
+    Candidate Name: RAHUL SHARMA | Roll No: 12648920 | School: Delhi Public School, R.K. Puram
+    Year of Passing: 2024
+
+    SUBJECT PERFORMANCE & MARKS STATEMENT:
+    Subject Code | Subject Name          | Theory (80) | Practical (20) | Marks Obtained (100) | Grade | Status
+    041          | MATHEMATICS           | 76          | 20             | 96                   | A1    | PASS
+    042          | PHYSICS               | 68          | 20             | 88                   | A2    | PASS
+    043          | CHEMISTRY             | 70          | 20             | 90                   | A1    | PASS
+    083          | COMPUTER SCIENCE      | 78          | 20             | 98                   | A1    | PASS
+    301          | ENGLISH CORE          | 72          | 19             | 91                   | A1    | PASS
+    048          | PHYSICAL EDUCATION    | 65          | 20             | 85                   | A2    | PASS
+
+    RESULT: PASS (DISTINCTION IN ALL SUBJECTS)
+    GRAND TOTAL: 548 / 600
+    AGGREGATE PERCENTAGE: 91.33%
+    """
+
+    from datalens.marksheet_engine import MarksheetEngine
+    engine = MarksheetEngine(sample_marksheet, file_name="Sample_Class_XII_Marksheet.pdf", api_key=SESSION.get("api_key"))
+    analysis = engine.analyze()
+    SESSION["marksheet_analysis"] = analysis
+    SESSION["resume_analysis"] = None
+
+    lines = [l.strip() for l in sample_marksheet.strip().split("\n") if l.strip()]
+    df = pd.DataFrame({
+        "Line_ID": list(range(1, len(lines) + 1)),
+        "Scorecard_Text": lines,
+        "Char_Count": [len(l) for l in lines],
+    })
+    _update_session_pipeline(df, "Sample_Class_XII_Marksheet.pdf", raw_text=sample_marksheet)
+    SESSION["ingestion_meta"] = {"format": "marksheet", "is_marksheet": True, "is_resume": False}
+
+    return {
+        "status": "success",
+        "message": "Sample Class XII Marksheet loaded",
+        "analysis": analysis,
+        "is_marksheet": True
+    }
 
 
 @app.post("/api/resume/analyze-text")
@@ -343,7 +436,9 @@ async def get_dataset_state(page: int = 1, page_size: int = 15):
         "dataset_name": SESSION["dataset_name"],
         "is_cleaned": SESSION["cleaned_df"] is not None,
         "is_resume": bool(SESSION.get("resume_analysis")),
+        "is_marksheet": bool(SESSION.get("marksheet_analysis")),
         "resume_analysis": SESSION.get("resume_analysis"),
+        "marksheet_analysis": SESSION.get("marksheet_analysis"),
         "total_rows": total_records,
         "total_cols": len(active_df.columns),
         "columns": list(active_df.columns),

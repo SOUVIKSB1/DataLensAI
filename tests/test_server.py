@@ -109,6 +109,31 @@ class TestDataLensServer(unittest.TestCase):
         self.assertEqual(res_text.status_code, 200)
         self.assertTrue(res_text.json()["is_resume"])
 
+    def test_08_marksheet_endpoints(self):
+        """Tests sample marksheet loading, GPA calculation, and analyze endpoints."""
+        res = self.client.post("/api/load-sample-marksheet")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data["is_marksheet"])
+        self.assertIsNotNone(data["analysis"])
+
+        an = data["analysis"]
+        self.assertGreaterEqual(an["summary_metrics"]["overall_percentage"], 80.0)
+        self.assertGreaterEqual(an["summary_metrics"]["gpa_out_of_10"], 8.0)
+        self.assertIn("Computer Science", [s["subject"] for s in an["subject_breakdown"]])
+        self.assertIsNotNone(an["strongest_subject"])
+        self.assertIsNotNone(an["weakest_subject"])
+
+        # Test marksheet retrieval endpoint
+        res_get = self.client.get("/api/marksheet/analyze")
+        self.assertEqual(res_get.status_code, 200)
+        self.assertTrue(res_get.json()["status"] == "success")
+
+        # Test state
+        res_state = self.client.get("/api/dataset?page=1")
+        self.assertEqual(res_state.status_code, 200)
+        self.assertTrue(res_state.json()["is_marksheet"])
+
 
 if __name__ == "__main__":
     unittest.main()

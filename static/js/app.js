@@ -252,6 +252,8 @@ document.addEventListener("DOMContentLoaded", () => {
         await fetchDatasetState(1);
         if (data.is_resume) {
           switchHub("hub-resume");
+        } else if (data.is_marksheet) {
+          switchHub("hub-marksheet");
         } else {
           switchHub("hub-data");
         }
@@ -318,7 +320,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load Sample Resume Data
   async function loadSampleResumeData() {
     try {
-      const res = await fetch("/api/load-sample-resume");
+      const res = await fetch("/api/load-sample-resume", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
         await fetchDatasetState(1);
@@ -329,9 +331,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Load Sample Marksheet Data
+  async function loadSampleMarksheetData() {
+    try {
+      const res = await fetch("/api/load-sample-marksheet", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchDatasetState(1);
+        switchHub("hub-marksheet");
+      }
+    } catch (err) {
+      console.error("Sample marksheet load error:", err);
+    }
+  }
+
   if (quickSampleBtn) quickSampleBtn.addEventListener("click", loadSampleHRData);
   if (heroSampleBtn) heroSampleBtn.addEventListener("click", loadSampleHRData);
   if (heroResumeBtn) heroResumeBtn.addEventListener("click", loadSampleResumeData);
+  const heroMarksheetBtn = document.getElementById("heroMarksheetBtn");
+  if (heroMarksheetBtn) heroMarksheetBtn.addEventListener("click", loadSampleMarksheetData);
 
   // =========================================================
   // 5. Dataset State Synchronization & UI Hydration
@@ -364,7 +382,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (topDatasetPill) {
       topDatasetPill.style.display = "inline-flex";
-      if (topDatasetName) topDatasetName.textContent = `${d.dataset_name} ${d.is_cleaned ? "(Cleaned)" : ""}`;
+      let typeBadge = "";
+      if (d.is_resume) typeBadge = " [Resume]";
+      else if (d.is_marksheet) typeBadge = " [Marksheet]";
+      else typeBadge = " [CSV Data]";
+      if (topDatasetName) topDatasetName.textContent = `${d.dataset_name}${typeBadge} ${d.is_cleaned ? "(Cleaned)" : ""}`;
     }
     if (resetDataBtn) resetDataBtn.style.display = d.is_cleaned ? "inline-flex" : "none";
 
@@ -374,6 +396,14 @@ document.addEventListener("DOMContentLoaded", () => {
       renderResumeAnalysis(d.resume_analysis);
     } else {
       if (navResumeBtn) navResumeBtn.style.display = "none";
+    }
+
+    const navMarksheetBtn = document.getElementById("navMarksheetBtn");
+    if (d.is_marksheet && d.marksheet_analysis) {
+      if (navMarksheetBtn) navMarksheetBtn.style.display = "inline-flex";
+      renderMarksheetAnalysis(d.marksheet_analysis);
+    } else {
+      if (navMarksheetBtn) navMarksheetBtn.style.display = "none";
     }
 
     // Update KPI cards in Data Explorer
@@ -548,6 +578,122 @@ document.addEventListener("DOMContentLoaded", () => {
     const sectionsEl = document.getElementById("atsSectionsList");
     if (sectionsEl && prof.detected_sections) {
       sectionsEl.innerHTML = prof.detected_sections.map(s => `<span class="badge badge-id" style="padding: 0.35rem 0.65rem;">${s}</span>`).join("");
+    }
+  }
+
+  // =========================================================
+  // 6.2 Marksheet & Academic Intelligence Renderer
+  // =========================================================
+  let marksheetChartInstance = null;
+
+  function renderMarksheetAnalysis(ma) {
+    if (!ma) return;
+
+    // Header & Meta
+    const nameEl = document.getElementById("marksheetCandidateName");
+    const tierBadge = document.getElementById("marksheetTierBadge");
+    const examInfo = document.getElementById("marksheetExamInfo");
+
+    if (nameEl) nameEl.textContent = ma.candidate_name || "Student Scorecard";
+    const sm = ma.summary_metrics || {};
+    if (tierBadge) {
+      tierBadge.textContent = sm.academic_tier || "Distinction Standing";
+      if (sm.tier_color) tierBadge.style.backgroundColor = sm.tier_color;
+    }
+    if (examInfo) {
+      examInfo.textContent = `${ma.examination_name || "Examination"} • ${ma.institution_board || "Board"} • Roll: ${ma.roll_number || "N/A"} • Passing: ${ma.passing_year || "N/A"}`;
+    }
+
+    // Top Metric Cards
+    const pctEl = document.getElementById("marksheetOverallPct");
+    const totalEl = document.getElementById("marksheetTotalScore");
+    const gpaEl = document.getElementById("marksheetGpa");
+    const gpa4El = document.getElementById("marksheetGpa4");
+
+    if (pctEl) pctEl.textContent = `${sm.overall_percentage || 0}%`;
+    if (totalEl) totalEl.textContent = `${sm.total_marks_obtained || 0} / ${sm.total_max_marks || 0} Total Marks`;
+    if (gpaEl) gpaEl.textContent = `${sm.gpa_out_of_10 || 0}`;
+    if (gpa4El) gpa4El.textContent = `${sm.gpa_out_of_4 || 0} / 4.0 US Scale`;
+
+    // Strongest & Weakest Subjects
+    const strong = ma.strongest_subject || {};
+    const weak = ma.weakest_subject || {};
+
+    const strongSubEl = document.getElementById("marksheetStrongestSub");
+    const strongMarksEl = document.getElementById("marksheetStrongestMarks");
+    const weakSubEl = document.getElementById("marksheetWeakestSub");
+    const weakMarksEl = document.getElementById("marksheetWeakestMarks");
+
+    if (strongSubEl) strongSubEl.textContent = strong.subject || "N/A";
+    if (strongMarksEl) strongMarksEl.textContent = `${strong.marks || 0} / ${strong.max || 100} (${strong.percentage || 0}%)`;
+
+    if (weakSubEl) weakSubEl.textContent = weak.subject || "N/A";
+    if (weakMarksEl) weakMarksEl.textContent = `${weak.marks || 0} / ${weak.max || 100} (${weak.percentage || 0}%)`;
+
+    // Subject Breakdown Table
+    const tableBody = document.getElementById("marksheetTableBody");
+    const subjects = ma.subject_breakdown || [];
+    if (tableBody) {
+      tableBody.innerHTML = subjects.map(s => `
+        <tr>
+          <td style="font-weight: 600; color: #FFFFFF;">${s.subject}</td>
+          <td style="color: var(--orange-bright); font-weight: 600;">${s.marks}</td>
+          <td style="color: var(--text-muted);">${s.max}</td>
+          <td>
+            <span class="badge ${s.percentage >= 80 ? 'badge-num' : (s.percentage >= 60 ? 'badge-cat' : 'badge-date')}" style="padding: 0.25rem 0.5rem;">
+              ${s.percentage}%
+            </span>
+          </td>
+          <td style="font-size: 0.85rem; color: var(--emerald); font-weight: 600;">${s.grade}</td>
+        </tr>
+      `).join("");
+    }
+
+    // Interactive Bar Chart
+    const canvas = document.getElementById("marksheetCanvas");
+    if (canvas && typeof Chart !== "undefined") {
+      if (marksheetChartInstance) marksheetChartInstance.destroy();
+      const ctx = canvas.getContext("2d");
+
+      marksheetChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: subjects.map(s => s.subject),
+          datasets: [{
+            label: "Percentage Score (%)",
+            data: subjects.map(s => s.percentage),
+            backgroundColor: subjects.map(s => s.percentage >= 90 ? "rgba(16, 185, 129, 0.85)" : (s.percentage >= 75 ? "rgba(255, 107, 0, 0.85)" : "rgba(239, 68, 68, 0.85)")),
+            borderColor: subjects.map(s => s.percentage >= 90 ? "#10B981" : (s.percentage >= 75 ? "#FF6B00" : "#EF4444")),
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: "rgba(255,255,255,0.06)" },
+              ticks: { color: "#94A3B8" }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: "#FFFFFF", font: { weight: "600" } }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // Gemini Academic Guidance Markdown
+    const guidanceEl = document.getElementById("marksheetGuidanceMarkdown");
+    if (guidanceEl && ma.academic_guidance && ma.academic_guidance.markdown) {
+      guidanceEl.innerHTML = marked.parse(ma.academic_guidance.markdown);
     }
   }
 
