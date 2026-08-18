@@ -961,20 +961,68 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Save API Key
+  // =========================================================
+  // 12. Google Gemini Connection Status & Setup
+  // =========================================================
+  const geminiBadge = document.getElementById("geminiStatusBadge");
+  const geminiNotice = document.getElementById("geminiFeaturesNotice");
+
+  async function checkApiKeyStatus() {
+    try {
+      const res = await fetch("/api/config/api-key-status");
+      const data = await res.json();
+      if (data.has_key && geminiBadge) {
+        geminiBadge.className = "badge badge-bool";
+        geminiBadge.textContent = "⚡ Gemini 2.5 Active";
+        if (geminiNotice) {
+          geminiNotice.innerHTML = "<span style='color: #10B981;'>✓ Connected to Gemini 2.5 Flash. Vision OCR, Deep Thinking Resume Engine, and AI Analyst are fully activated.</span>";
+        }
+      }
+    } catch (e) {
+      console.warn("Could not check Gemini key status:", e);
+    }
+  }
+
   saveApiKeyBtn.addEventListener("click", async () => {
     const key = apiKeyInput.value.trim();
+    if (!key) {
+      alert("Please enter a valid Gemini API key (starts with AIzaSy...).");
+      return;
+    }
+
+    saveApiKeyBtn.disabled = true;
+    saveApiKeyBtn.textContent = "Verifying...";
+
     try {
       const res = await fetch("/api/config/api-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ api_key: key }),
       });
+      const data = await res.json();
+      saveApiKeyBtn.disabled = false;
+      saveApiKeyBtn.textContent = "Connect";
+
       if (res.ok) {
-        alert("Gemini API key saved successfully!");
+        if (data.verified) {
+          if (geminiBadge) {
+            geminiBadge.className = "badge badge-bool";
+            geminiBadge.textContent = "⚡ Gemini 2.5 Active";
+          }
+          if (geminiNotice) {
+            geminiNotice.innerHTML = "<span style='color: #10B981;'>✓ Verified! Gemini 2.5 Flash Vision OCR, Deep Thinking Career Suite, and AI Analyst are active.</span>";
+          }
+          alert("🎉 Google Gemini API key connected and verified successfully!");
+        } else {
+          alert("Key saved! (Note: Running in offline deterministic fallback if quota or verification fails).");
+        }
+      } else {
+        alert(data.detail || "Failed to update API key.");
       }
     } catch (err) {
       console.error("Key save error:", err);
+      saveApiKeyBtn.disabled = false;
+      saveApiKeyBtn.textContent = "Connect";
     }
   });
 
@@ -991,6 +1039,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Initial Data Fetch
+  // Initial Data & API Key Status Fetch
+  checkApiKeyStatus();
   fetchDatasetState(1);
 });
+

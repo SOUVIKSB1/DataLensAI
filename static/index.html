@@ -113,14 +113,17 @@
           </div>
 
           <div class="glass-card">
-            <h3 style="font-size: 1.15rem; color: #FFFFFF; margin-bottom: 0.75rem;">🔑 Optional Google Gemini API Key</h3>
-            <div style="display: flex; gap: 0.5rem;">
-              <input type="password" id="apiKeyInput" class="form-control" placeholder="Enter Gemini API key (optional)">
-              <button id="saveApiKeyBtn" class="btn btn-outline-orange btn-sm">Save</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <h3 style="font-size: 1.15rem; color: #FFFFFF;">🔑 Google Gemini AI Key</h3>
+              <span id="geminiStatusBadge" class="badge badge-id">Offline Mode</span>
             </div>
-            <p style="color: var(--text-dim); font-size: 0.78rem; margin-top: 0.5rem;">
-              100% of statistical math, data cleaning, and ML runs offline deterministically.
-            </p>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="password" id="apiKeyInput" class="form-control" placeholder="Enter Gemini API key (AIzaSy...)">
+              <button id="saveApiKeyBtn" class="btn btn-outline-orange btn-sm">Connect</button>
+            </div>
+            <div id="geminiFeaturesNotice" style="color: var(--text-dim); font-size: 0.78rem; margin-top: 0.6rem; line-height: 1.5;">
+              Unlocks Gemini 2.5 Flash Vision OCR for image resumes, executive natural language analyst, and Google XYZ line rewrites.
+            </div>
           </div>
         </div>
       </div>

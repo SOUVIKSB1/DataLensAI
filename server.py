@@ -252,9 +252,27 @@ async def load_sample_resume():
 
 @app.post("/api/config/api-key")
 async def set_api_key(data: Dict[str, str]):
-    """Configures or updates the Google Gemini API key."""
+    """Configures or updates the Google Gemini API key with live verification."""
     key = data.get("api_key", "").strip()
     SESSION["api_key"] = key
+
+    # Test key verification
+    verified = False
+    error_msg = None
+    if key:
+        try:
+            from google import genai
+            client = genai.Client(api_key=key)
+            resp = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents="Ping"
+            )
+            if resp and resp.text:
+                verified = True
+        except Exception as e:
+            error_msg = str(e)
+            app_logger.warning(f"API Key verification test warning: {e}")
+
     if SESSION.get("ai_engine"):
         active_df = SESSION["cleaned_df"] if SESSION["cleaned_df"] is not None else SESSION["raw_df"]
         SESSION["ai_engine"] = AIEngine(
@@ -264,7 +282,24 @@ async def set_api_key(data: Dict[str, str]):
             stats_dict=SESSION["statistics"],
             api_key=key,
         )
-    return {"status": "success", "message": "API key updated successfully"}
+
+    return {
+        "status": "success",
+        "verified": verified,
+        "error": error_msg,
+        "message": "Gemini API key connected and verified successfully!" if verified else "API key saved (running in fallback mode if unverified)."
+    }
+
+
+@app.get("/api/config/api-key-status")
+async def get_api_key_status():
+    """Returns whether a Gemini API key is currently active."""
+    has_key = bool(SESSION.get("api_key") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
+    return {
+        "has_key": has_key,
+        "model": "gemini-2.5-flash",
+        "provider": "Google DeepMind GenAI"
+    }
 
 
 @app.get("/api/dataset")
