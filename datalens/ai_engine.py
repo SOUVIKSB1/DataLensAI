@@ -66,6 +66,41 @@ class AIEngine:
                 app_logger.warning(f"Could not initialize LLM client: {e}")
                 self.client = None
 
+    def _call_gemini(self, prompt: str) -> Optional[str]:
+        """Versatile caller supporting models.generate_content, interactions.create, and legacy SDKs."""
+        if not self.client:
+            return None
+
+        # Candidate models to try in sequence
+        models_to_try = [self.model_name, "gemini-2.5-flash", "gemini-1.5-flash", "gemini-3.7-flash"]
+        models_to_try = list(dict.fromkeys(models_to_try))
+
+        # 1. Try modern google-genai SDK
+        for m in models_to_try:
+            try:
+                # Priority 1: models.generate_content
+                if hasattr(self.client, "models") and hasattr(self.client.models, "generate_content"):
+                    resp = self.client.models.generate_content(model=m, contents=prompt)
+                    if resp and resp.text:
+                        return resp.text.strip()
+
+                # Priority 2: interactions.create
+                if hasattr(self.client, "interactions") and hasattr(self.client.interactions, "create"):
+                    inter = self.client.interactions.create(model=m, input=prompt)
+                    if inter and hasattr(inter, "output_text") and inter.output_text:
+                        return inter.output_text.strip()
+
+                # Priority 3: Legacy generate_content
+                if hasattr(self.client, "generate_content"):
+                    resp = self.client.generate_content(prompt)
+                    if resp and resp.text:
+                        return resp.text.strip()
+            except Exception as e:
+                app_logger.warning(f"Model {m} attempt failed: {e}")
+                continue
+
+        return None
+
     def _build_grounded_context(self) -> str:
         """Constructs a factual, deterministic, privacy-sanitized summary context."""
         lines = []
@@ -117,18 +152,9 @@ Generate a polished executive briefing in Markdown with:
 4. 🎯 **Strategic Recommendations for ML & Decision Making**
 
 RULE: Every key claim MUST be backed by a bracketed evidence tag (e.g. `[Evidence: Pearson r=0.82]`)."""
-            try:
-                if hasattr(self.client, "models"):
-                    response = self.client.models.generate_content(
-                        model=self.model_name,
-                        contents=prompt,
-                    )
-                    return response.text
-                elif hasattr(self.client, "generate_content"):
-                    response = self.client.generate_content(prompt)
-                    return response.text
-            except Exception as e:
-                app_logger.warning(f"LLM generation failed: {e}. Falling back to multi-agent rule engine.")
+            result = self._call_gemini(prompt)
+            if result:
+                return result
 
         # Fallback to deterministic multi-agent audit
         audit = self.orchestrator.run_autonomous_audit()
@@ -241,15 +267,9 @@ Relevant Knowledge Base Articles:
 User question: {user_query}
 
 Provide a concise, grounded answer. Ensure any claims are backed by data facts or domain knowledge."""
-            try:
-                if hasattr(self.client, "models"):
-                    res = self.client.models.generate_content(model=self.model_name, contents=prompt)
-                    return {"answer": res.text, "data": None}
-                elif hasattr(self.client, "generate_content"):
-                    res = self.client.generate_content(prompt)
-                    return {"answer": res.text, "data": None}
-            except Exception as e:
-                app_logger.warning(f"LLM query answering failed: {e}")
+            res_text = self._call_gemini(prompt)
+            if res_text:
+                return {"answer": res_text, "data": None}
 
         # If RAG found an article for conceptual query
         if rag_docs:

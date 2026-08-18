@@ -308,15 +308,23 @@ Format each as:
 # 🗓️ 30-Day Strategic Roadmap to Reach a 9.8/10 Score
 (Week-by-week actionable plan to elevate their resume and GitHub/portfolio to world-class standards.)
 """
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=prompt,
-                )
-                if response and response.text:
-                    return {
-                        "mode": "gemini_deep_thinking",
-                        "markdown": response.text
-                    }
+                models_to_try = [os.getenv("MODEL_NAME", "gemini-2.5-flash"), "gemini-2.5-flash", "gemini-3.7-flash", "gemini-1.5-flash"]
+                for m in list(dict.fromkeys(models_to_try)):
+                    try:
+                        # 1. Try models.generate_content
+                        if hasattr(client, "models") and hasattr(client.models, "generate_content"):
+                            response = client.models.generate_content(model=m, contents=prompt)
+                            if response and response.text:
+                                return {"mode": "gemini_deep_thinking", "markdown": response.text.strip()}
+
+                        # 2. Try interactions.create
+                        if hasattr(client, "interactions") and hasattr(client.interactions, "create"):
+                            inter = client.interactions.create(model=m, input=prompt)
+                            if inter and hasattr(inter, "output_text") and inter.output_text:
+                                return {"mode": "gemini_deep_thinking", "markdown": inter.output_text.strip()}
+                    except Exception as me:
+                        logger.warning(f"Resume model {m} attempt: {me}")
+                        continue
             except Exception as e:
                 logger.warning(f"Gemini deep analysis fallback triggered: {e}")
 
